@@ -1,0 +1,6 @@
+[package]
+name = "nes"
+version = "0.0.0"
+authors = ["Peter DeLong <pdelong@princeton.edu>"]
+
+[dependencies]
