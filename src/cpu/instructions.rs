@@ -1,3 +1,5 @@
+// The possible addressing modes of an instruction
+// TODO: Put important details in comments above each
 pub enum AddressingMode {
     Implicit,
     Accumulator,
@@ -14,14 +16,25 @@ pub enum AddressingMode {
     IndirectIndexed,
 }
 
+// Format of instructions
 pub struct Instruction<'a> {
+    // The name of the instruction for informational purposes
     str_name: &'a str,
+
+    // The cycle delay encountered when crossing page boundary
     page_delay: u32,
+
+    // Number of cycles used by the instruction without any penalties
     cycles: u32,
+
+    // Addressing mode used in memory lookup
     addr_mode: AddressingMode,
+
+    // Actual size of the instruction besides the 1 byte opcode
     size: u32
 }
 
+// All possible instructions and their properties. This makes decoding as simple as an array lookup
 pub const intructions: [Instruction; 256] = [
     Instruction{str_name: "BRK", page_delay: 4, cycles: 0, size: 7, addr_mode: AddressingMode::Implicit},
     Instruction{str_name: "ORA", page_delay: 4, cycles: 0, size: 6, addr_mode: AddressingMode::IndexedIndirect},
