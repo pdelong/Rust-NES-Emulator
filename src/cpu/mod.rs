@@ -20,35 +20,6 @@ pub struct CPU {
     stall: u32
 }
 
-enum AddressingMode {
-    Implicit,
-    Accumulator,
-    Immediate,
-    ZeroPage,
-    ZeroPageX,
-    ZeroPageY,
-    Relative,
-    Absolute,
-    AbsoluteX,
-    AbsoluteY,
-    Indirect,
-    IndexedIndirect,
-    IndirectIndexed,
-}
-
-struct Instruction<'a> {
-    str_name: &'a str,
-    page_delay: u32,
-    cycles: u32,
-    addr_mode: AddressingMode,
-    size: u32
-}
-
-const intructions: [Instruction; 1] = [
-    Instruction{str_name: "Helo", page_delay: 0, cycles: 10, addr_mode: AddressingMode::Accumulator, size:4 }
-];
-
-
 impl CPU {
     pub fn new() -> CPU {
         CPU {
