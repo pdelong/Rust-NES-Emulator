@@ -18,6 +18,30 @@ pub struct CPU {
     stall: u32
 }
 
+enum AddressingMode {
+    Implicit,
+    Accumulator,
+    Immediate,
+    ZeroPage,
+    ZeroPageX,
+    ZeroPageY,
+    Relative,
+    Absolute,
+    AbsoluteX,
+    AbsoluteY,
+    Indirect,
+    IndexedIndirect,
+    IndirectIndexed,
+}
+
+struct Instruction {
+    str_name: String,
+    page_delay: u32,
+    cycles: u32,
+    addr_mode: AddressingMode,
+    size: u32
+}
+
 impl CPU {
     pub fn new() -> CPU {
         CPU {
