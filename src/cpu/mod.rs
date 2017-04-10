@@ -1,3 +1,5 @@
+mod instructions;
+
 pub struct CPU {
     pub memory: Vec<u16>,
     cycles: u64,
@@ -34,13 +36,18 @@ enum AddressingMode {
     IndirectIndexed,
 }
 
-struct Instruction {
-    str_name: String,
+struct Instruction<'a> {
+    str_name: &'a str,
     page_delay: u32,
     cycles: u32,
     addr_mode: AddressingMode,
     size: u32
 }
+
+const intructions: [Instruction; 1] = [
+    Instruction{str_name: "Helo", page_delay: 0, cycles: 10, addr_mode: AddressingMode::Accumulator, size:4 }
+];
+
 
 impl CPU {
     pub fn new() -> CPU {
@@ -73,3 +80,4 @@ impl CPU {
 
     }
 }
+
