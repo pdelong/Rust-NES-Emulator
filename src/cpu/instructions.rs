@@ -1,4 +1,4 @@
-enum AddressingMode {
+pub enum AddressingMode {
     Implicit,
     Accumulator,
     Immediate,
@@ -14,7 +14,7 @@ enum AddressingMode {
     IndirectIndexed,
 }
 
-struct Instruction<'a> {
+pub struct Instruction<'a> {
     str_name: &'a str,
     page_delay: u32,
     cycles: u32,
@@ -22,7 +22,7 @@ struct Instruction<'a> {
     size: u32
 }
 
-const intructions: [Instruction; 256] = [
+pub const intructions: [Instruction; 256] = [
     Instruction{str_name: "BRK", page_delay: 4, cycles: 0, size: 7, addr_mode: AddressingMode::Implicit},
     Instruction{str_name: "ORA", page_delay: 4, cycles: 0, size: 6, addr_mode: AddressingMode::IndexedIndirect},
     Instruction{str_name: "KIL", page_delay: 4, cycles: 0, size: 2, addr_mode: AddressingMode::Implicit},
