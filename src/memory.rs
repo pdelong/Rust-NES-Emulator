@@ -9,7 +9,7 @@ impl<'a> Memory<'a> {
         Memory{ram: vec![0; 2048], cart: &cart}
     }
 
-    pub fn read16(&self, address: u16) -> u8 {
+    pub fn read(&self, address: u16) -> u8 {
         match address {
             // 2k of ram repeated 4 times
             0 ... 0x1fff => {
@@ -35,13 +35,13 @@ impl<'a> Memory<'a> {
 
             // First 16k of ROM
             0x8000 ... 0xBFFF => {
-                self.cart.rom[address - 0x8000];
+                self.cart.rom[address as usize - 0x8000]
             }
 
             // Last 16k of ROM (just a mirror for NROM-128)
             0xC000 ... 0xFFFF => {
                 // REMEMBER THIS IS A MIRROR OF THE PREVIOUS BECAUSE NROM 128
-                self.cart.rom[address - 0xC000];
+                self.cart.rom[address as usize - 0xC000]
             }
             _ => 0
         }

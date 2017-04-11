@@ -9,8 +9,11 @@ fn main() {
     }
 
 
-    let cartridge = nes::cartridge::Cartridge::new(&args[1]);
+    let info = nes::ines::INesInfo::new(&args[1]);
+    let cartridge = nes::cartridge::Cartridge::new(info);
     let memory = nes::memory::Memory::new(&cartridge);
-    let cpu = nes::cpu::CPU::new(&memory);
-    println!("Hello, World!");
+    let mut cpu = nes::cpu::CPU::new(&memory);
+
+    cpu.step();
+
 }
