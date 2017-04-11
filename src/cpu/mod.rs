@@ -42,8 +42,6 @@ impl<'a, 'b> CPU<'a> {
             z: 0,   
             i: 0,   
             d: 0,   
-            b: 0,   
-            u: 0,   
             v: 0,   
             n: 0,   
             interrupt: 0,
@@ -53,88 +51,162 @@ impl<'a, 'b> CPU<'a> {
 
     pub fn step(&mut self) {
         let opcode = self.memory.read(self.pc);
-        println!("{:?}", instructions[opcode as usize]);
+        let instruction = &instructions[opcode as usize];
+        println!("{}: {}", self.pc, instruction.str_name);
+        self.pc += instruction.size as u16;
     }
 
     pub fn step_num(cycles: u32) {
 
     }
 
-    fn adc(address: u16, pc: u16, mode: AddressingMode){} 
-    fn ahx(address: u16, pc: u16, mode: AddressingMode){}
-    fn alr(address: u16, pc: u16, mode: AddressingMode){}
-    fn anc(address: u16, pc: u16, mode: AddressingMode){}
-    fn and(address: u16, pc: u16, mode: AddressingMode){}
-    fn arr(address: u16, pc: u16, mode: AddressingMode){}
-    fn asl(address: u16, pc: u16, mode: AddressingMode){}
-    fn axs(address: u16, pc: u16, mode: AddressingMode){}
-    fn bcc(address: u16, pc: u16, mode: AddressingMode){}
-    fn bcs(address: u16, pc: u16, mode: AddressingMode){}
-    fn beq(address: u16, pc: u16, mode: AddressingMode){}
-    fn bit(address: u16, pc: u16, mode: AddressingMode){}
-    fn bmi(address: u16, pc: u16, mode: AddressingMode){}
-    fn bne(address: u16, pc: u16, mode: AddressingMode){}
-    fn bpl(address: u16, pc: u16, mode: AddressingMode){}
-    fn brk(address: u16, pc: u16, mode: AddressingMode){}
-    fn bvc(address: u16, pc: u16, mode: AddressingMode){}
-    fn bvs(address: u16, pc: u16, mode: AddressingMode){}
-    fn clc(address: u16, pc: u16, mode: AddressingMode){}
-    fn cld(address: u16, pc: u16, mode: AddressingMode){}
-    fn cli(address: u16, pc: u16, mode: AddressingMode){}
-    fn clv(address: u16, pc: u16, mode: AddressingMode){}
-    fn cmp(address: u16, pc: u16, mode: AddressingMode){}
-    fn cpx(address: u16, pc: u16, mode: AddressingMode){}
-    fn cpy(address: u16, pc: u16, mode: AddressingMode){}
-    fn dcp(address: u16, pc: u16, mode: AddressingMode){}
-    fn dec(address: u16, pc: u16, mode: AddressingMode){}
-    fn dex(address: u16, pc: u16, mode: AddressingMode){}
-    fn dey(address: u16, pc: u16, mode: AddressingMode){}
-    fn eor(address: u16, pc: u16, mode: AddressingMode){}
-    fn inc(address: u16, pc: u16, mode: AddressingMode){}
-    fn inx(address: u16, pc: u16, mode: AddressingMode){}
-    fn iny(address: u16, pc: u16, mode: AddressingMode){}
-    fn isc(address: u16, pc: u16, mode: AddressingMode){}
-    fn jmp(address: u16, pc: u16, mode: AddressingMode){}
-    fn jsr(address: u16, pc: u16, mode: AddressingMode){}
-    fn kil(address: u16, pc: u16, mode: AddressingMode){}
-    fn las(address: u16, pc: u16, mode: AddressingMode){}
-    fn lax(address: u16, pc: u16, mode: AddressingMode){}
-    fn lda(address: u16, pc: u16, mode: AddressingMode){}
-    fn ldx(address: u16, pc: u16, mode: AddressingMode){}
-    fn ldy(address: u16, pc: u16, mode: AddressingMode){}
-    fn lsr(address: u16, pc: u16, mode: AddressingMode){}
-    fn nop(address: u16, pc: u16, mode: AddressingMode){}
-    fn ora(address: u16, pc: u16, mode: AddressingMode){}
-    fn pha(address: u16, pc: u16, mode: AddressingMode){}
-    fn php(address: u16, pc: u16, mode: AddressingMode){}
-    fn pla(address: u16, pc: u16, mode: AddressingMode){}
-    fn plp(address: u16, pc: u16, mode: AddressingMode){}
-    fn rla(address: u16, pc: u16, mode: AddressingMode){}
-    fn rol(address: u16, pc: u16, mode: AddressingMode){}
-    fn ror(address: u16, pc: u16, mode: AddressingMode){}
-    fn rra(address: u16, pc: u16, mode: AddressingMode){}
-    fn rti(address: u16, pc: u16, mode: AddressingMode){}
-    fn rts(address: u16, pc: u16, mode: AddressingMode){}
-    fn sax(address: u16, pc: u16, mode: AddressingMode){}
-    fn sbc(address: u16, pc: u16, mode: AddressingMode){}
-    fn sec(address: u16, pc: u16, mode: AddressingMode){}
-    fn sed(address: u16, pc: u16, mode: AddressingMode){}
-    fn sei(address: u16, pc: u16, mode: AddressingMode){}
-    fn shx(address: u16, pc: u16, mode: AddressingMode){}
-    fn shy(address: u16, pc: u16, mode: AddressingMode){}
-    fn slo(address: u16, pc: u16, mode: AddressingMode){}
-    fn sre(address: u16, pc: u16, mode: AddressingMode){}
-    fn sta(address: u16, pc: u16, mode: AddressingMode){}
-    fn stx(address: u16, pc: u16, mode: AddressingMode){}
-    fn sty(address: u16, pc: u16, mode: AddressingMode){}
-    fn tas(address: u16, pc: u16, mode: AddressingMode){}
-    fn tax(address: u16, pc: u16, mode: AddressingMode){}
-    fn tay(address: u16, pc: u16, mode: AddressingMode){}
-    fn tsx(address: u16, pc: u16, mode: AddressingMode){}
-    fn txa(address: u16, pc: u16, mode: AddressingMode){}
-    fn txs(address: u16, pc: u16, mode: AddressingMode){}
-    fn tya(address: u16, pc: u16, mode: AddressingMode){}
-    fn xaa(address: u16, pc: u16, mode: AddressingMode){}
+    fn adc(&mut self, address: u16, pc: u16, mode: AddressingMode){} 
+    fn ahx(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn alr(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn anc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn and(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn arr(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn asl(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn axs(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bcc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bcs(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn beq(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bit(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bmi(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bne(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bpl(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn brk(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bvc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn bvs(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+
+    fn clc(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.c = 0;
+    }
+
+    fn cld(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.d = 0;
+    }
+
+    fn cli(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.i = 0;
+    }
+
+    fn clv(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.v = 0;
+    }
+
+    fn cmp(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn cpx(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn cpy(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn dcp(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn dec(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+
+    fn dex(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.x -= 1;
+        self.z = if self.x == 0 { 1 } else { 0 };
+        self.n = if self.x & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn dey(&mut self, address: u16, pc: u16, mode: AddressingMode){
+        self.y -= 1;
+        self.z = if self.y == 0 { 1 } else { 0 };
+        self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn eor(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn inc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+
+    fn inx(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.x += 1;
+        self.z = if self.x == 0 { 1 } else { 0 };
+        self.n = if self.x & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn iny(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.y += 1;
+        self.z = if self.y == 0 { 1 } else { 0 };
+        self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn isc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn jmp(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn jsr(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn kil(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn las(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn lax(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn lda(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn ldx(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn ldy(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn lsr(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn nop(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn ora(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn pha(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn php(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn pla(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn plp(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn rla(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn rol(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn ror(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn rra(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn rti(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn rts(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn sax(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn sbc(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+
+    fn sec(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.c = 1;
+    }
+
+    fn sed(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.d = 1;
+    }
+
+    fn sei(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.i = 1;
+    }
+
+    fn shx(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn shy(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn slo(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn sre(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn sta(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn stx(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn sty(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+    fn tas(&mut self, address: u16, pc: u16, mode: AddressingMode){}
+
+    fn tax(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.x = self.a;
+        self.z = if self.x == 0 { 1 } else { 0 };
+        self.n = if self.x & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn tay(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.y = self.a;
+        self.z = if self.y == 0 { 1 } else { 0 };
+        self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn tsx(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.x = self.sp;
+    }
+
+    fn txa(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.a = self.x;
+        self.z = if self.a == 0 { 1 } else { 0 };
+        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn txs(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.sp = self.x;
+    }
+
+    fn tya(&mut self, address: u16, pc: u16, mode: AddressingMode) {
+        self.a = self.y;
+        self.z = if self.a == 0 { 1 } else { 0 };
+        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+    }
+
+    fn xaa(&mut self, address: u16, pc: u16, mode: AddressingMode){}
 }
 
 // The possible addressing modes of an instruction
@@ -157,8 +229,7 @@ pub enum AddressingMode {
 }
 
 // Format of instructions
-#[derive(Debug)]
-pub struct Instruction<'a> {
+pub struct Instruction<'a, 'b> {
     // The name of the instruction for informational purposes
     str_name: &'a str,
 
@@ -175,7 +246,13 @@ pub struct Instruction<'a> {
     size: u32,
 
     // Pointer to function that implements this instruction
-    fun: fn(u16, u16, AddressingMode)
+    fun: fn(&mut CPU<'b>, u16, u16, AddressingMode)
+}
+
+impl<'a, 'b> Instruction<'a, 'b> {
+    fn print(&self) {
+        println!("{}", self.str_name);
+    }
 }
 
 // All possible instructions and their properties. This makes decoding as simple as an array lookup
