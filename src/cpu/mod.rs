@@ -1,5 +1,5 @@
-pub struct CPU {
-    pub memory: Vec<u16>,
+pub struct CPU<'a> {
+    pub memory: &'a ::memory::Memory<'a>,
     cycles: u64,
     pc: u16, 
     sp: u8,   
@@ -18,10 +18,10 @@ pub struct CPU {
     stall: u32
 }
 
-impl CPU {
-    pub fn new() -> CPU {
+impl<'a, 'b> CPU<'a> {
+    pub fn new(mem: &'a ::memory::Memory<'a>) -> CPU<'a> {
         CPU {
-            memory: vec![0;0x1000],
+            memory: mem,
             cycles: 0,
             pc: 0, 
             sp: 0,   
@@ -166,7 +166,7 @@ pub struct Instruction<'a> {
 }
 
 // All possible instructions and their properties. This makes decoding as simple as an array lookup
-pub const instructions: [Instruction; 256] = [
+const instructions: [Instruction; 256] = [
     Instruction{str_name: "BRK", fun: CPU::brk, page_delay: 4, cycles: 0, size: 7, addr_mode: AddressingMode::Implicit},
     Instruction{str_name: "ORA", fun: CPU::ora, page_delay: 4, cycles: 0, size: 6, addr_mode: AddressingMode::IndexedIndirect},
     Instruction{str_name: "KIL", fun: CPU::kil, page_delay: 4, cycles: 0, size: 2, addr_mode: AddressingMode::Implicit},
@@ -423,4 +423,4 @@ pub const instructions: [Instruction; 256] = [
     Instruction{str_name: "SBC", fun: CPU::sbc, page_delay: 4, cycles: 1, size: 4, addr_mode: AddressingMode::AbsoluteX},
     Instruction{str_name: "INC", fun: CPU::inc, page_delay: 4, cycles: 0, size: 7, addr_mode: AddressingMode::AbsoluteX},
     Instruction{str_name: "ISC", fun: CPU::isc, page_delay: 4, cycles: 0, size: 7, addr_mode: AddressingMode::AbsoluteX},
-    ];
+];
