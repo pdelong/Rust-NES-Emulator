@@ -4,7 +4,8 @@ use std::io::prelude::*;
 use std::path::Path;
 
 pub struct Cartridge {
-    rom: Vec<u8>
+    ram: Vec<u8>,
+    rom: Vec<u8>,
 }
 
 impl Cartridge {
@@ -32,6 +33,6 @@ impl Cartridge {
                 Ok(byte) => { rom[i] = byte; i+=1; }
             }
         }
-        Cartridge {rom: vec![0]}
+        Cartridge {rom: rom, ram: vec![0; 0x4000]}
     }
 }
