@@ -421,16 +421,65 @@ impl<'a> CPU<'a> {
     fn axs(&mut self, address: u16, mode: AddressingMode){}
 
     /* All the branch instruction */
-    fn bcc(&mut self, address: u16, mode: AddressingMode){}
-    fn bcs(&mut self, address: u16, mode: AddressingMode){}
-    fn beq(&mut self, address: u16, mode: AddressingMode){}
+    fn bcc(&mut self, address: u16, mode: AddressingMode) {
+        if self.c == 0 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
+    fn bcs(&mut self, address: u16, mode: AddressingMode) {
+        if self.c == 1 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
+    fn beq(&mut self, address: u16, mode: AddressingMode) {
+        if self.z == 1{
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
     fn bit(&mut self, address: u16, mode: AddressingMode){}
-    fn bmi(&mut self, address: u16, mode: AddressingMode){}
-    fn bne(&mut self, address: u16, mode: AddressingMode){}
-    fn bpl(&mut self, address: u16, mode: AddressingMode){}
+
+    fn bmi(&mut self, address: u16, mode: AddressingMode) {
+        if self.n == 1{
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
+    fn bne(&mut self, address: u16, mode: AddressingMode) {
+        if self.z == 0 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
+    fn bpl(&mut self, address: u16, mode: AddressingMode) {
+        if self.n == 0 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
     fn brk(&mut self, address: u16, mode: AddressingMode){}
-    fn bvc(&mut self, address: u16, mode: AddressingMode){}
-    fn bvs(&mut self, address: u16, mode: AddressingMode){}
+
+    fn bvc(&mut self, address: u16, mode: AddressingMode) {
+        if self.v == 0 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
+
+    fn bvs(&mut self, address: u16, mode: AddressingMode) {
+        if self.v == 1 {
+            self.pc = address;
+            // TODO: Update cycles
+        }
+    }
 
     fn clc(&mut self, address: u16, mode: AddressingMode) {
         self.c = 0;
@@ -536,11 +585,14 @@ impl<'a> CPU<'a> {
     }
 
     fn isc(&mut self, address: u16, mode: AddressingMode){}
+
     fn jmp(&mut self, address: u16, mode: AddressingMode){}
     fn jsr(&mut self, address: u16, mode: AddressingMode){}
+
     fn kil(&mut self, address: u16, mode: AddressingMode){}
     fn las(&mut self, address: u16, mode: AddressingMode){}
     fn lax(&mut self, address: u16, mode: AddressingMode){}
+
     fn lda(&mut self, address: u16, mode: AddressingMode){}
     fn ldx(&mut self, address: u16, mode: AddressingMode){}
     fn ldy(&mut self, address: u16, mode: AddressingMode){}
@@ -551,13 +603,19 @@ impl<'a> CPU<'a> {
     fn php(&mut self, address: u16, mode: AddressingMode){}
     fn pla(&mut self, address: u16, mode: AddressingMode){}
     fn plp(&mut self, address: u16, mode: AddressingMode){}
+
     fn rla(&mut self, address: u16, mode: AddressingMode){}
+
     fn rol(&mut self, address: u16, mode: AddressingMode){}
     fn ror(&mut self, address: u16, mode: AddressingMode){}
+
     fn rra(&mut self, address: u16, mode: AddressingMode){}
+
     fn rti(&mut self, address: u16, mode: AddressingMode){}
     fn rts(&mut self, address: u16, mode: AddressingMode){}
+
     fn sax(&mut self, address: u16, mode: AddressingMode){}
+
     fn sbc(&mut self, address: u16, mode: AddressingMode){}
 
     fn sec(&mut self, address: u16, mode: AddressingMode) {
