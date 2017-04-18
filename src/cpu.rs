@@ -446,7 +446,9 @@ impl<'a> CPU<'a> {
         }
     }
 
-    fn bit(&mut self, address: u16, mode: AddressingMode){}
+    fn bit(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn bmi(&mut self, address: u16, mode: AddressingMode) {
         if self.n == 1{
@@ -469,7 +471,9 @@ impl<'a> CPU<'a> {
         }
     }
 
-    fn brk(&mut self, address: u16, mode: AddressingMode){}
+    fn brk(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn bvc(&mut self, address: u16, mode: AddressingMode) {
         if self.v == 0 {
@@ -528,7 +532,9 @@ impl<'a> CPU<'a> {
         self.v = if self.y < mem { 1 } else { 0 };
     }
 
-    fn dcp(&mut self, address: u16, mode: AddressingMode){}
+    fn dcp(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn dec(&mut self, address: u16, mode: AddressingMode) {
         let memref = self.memory.borrow();
@@ -588,14 +594,26 @@ impl<'a> CPU<'a> {
         self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
     }
 
-    fn isc(&mut self, address: u16, mode: AddressingMode){}
+    fn isc(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn jmp(&mut self, address: u16, mode: AddressingMode){}
-    fn jsr(&mut self, address: u16, mode: AddressingMode){}
+    fn jmp(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn jsr(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn kil(&mut self, address: u16, mode: AddressingMode){}
-    fn las(&mut self, address: u16, mode: AddressingMode){}
-    fn lax(&mut self, address: u16, mode: AddressingMode){}
+    fn kil(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn las(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn lax(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn lda(&mut self, address: u16, mode: AddressingMode) {
         let memref = self.memory.borrow();
@@ -624,27 +642,57 @@ impl<'a> CPU<'a> {
         self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
     }
 
-    fn lsr(&mut self, address: u16, mode: AddressingMode){}
-    fn nop(&mut self, address: u16, mode: AddressingMode){}
-    fn ora(&mut self, address: u16, mode: AddressingMode){}
-    fn pha(&mut self, address: u16, mode: AddressingMode){}
-    fn php(&mut self, address: u16, mode: AddressingMode){}
-    fn pla(&mut self, address: u16, mode: AddressingMode){}
-    fn plp(&mut self, address: u16, mode: AddressingMode){}
+    fn lsr(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn nop(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn ora(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn pha(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn php(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn pla(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn plp(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn rla(&mut self, address: u16, mode: AddressingMode){}
+    fn rla(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn rol(&mut self, address: u16, mode: AddressingMode){}
-    fn ror(&mut self, address: u16, mode: AddressingMode){}
+    fn rol(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn ror(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn rra(&mut self, address: u16, mode: AddressingMode){}
+    fn rra(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn rti(&mut self, address: u16, mode: AddressingMode){}
-    fn rts(&mut self, address: u16, mode: AddressingMode){}
+    fn rti(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn rts(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn sax(&mut self, address: u16, mode: AddressingMode){}
+    fn sax(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
-    fn sbc(&mut self, address: u16, mode: AddressingMode){}
+    fn sbc(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn sec(&mut self, address: u16, mode: AddressingMode) {
         self.c = 1;
@@ -658,10 +706,18 @@ impl<'a> CPU<'a> {
         self.i = 1;
     }
 
-    fn shx(&mut self, address: u16, mode: AddressingMode){}
-    fn shy(&mut self, address: u16, mode: AddressingMode){}
-    fn slo(&mut self, address: u16, mode: AddressingMode){}
-    fn sre(&mut self, address: u16, mode: AddressingMode){}
+    fn shx(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn shy(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn slo(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
+    fn sre(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn sta(&mut self, address: u16, mode: AddressingMode) { 
         let mutref = &mut self.memory.borrow_mut();
@@ -681,7 +737,9 @@ impl<'a> CPU<'a> {
         mutref.write(self.y, address);
     }
 
-    fn tas(&mut self, address: u16, mode: AddressingMode){}
+    fn tas(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 
     fn tax(&mut self, address: u16, mode: AddressingMode) {
         self.x = self.a;
@@ -715,7 +773,9 @@ impl<'a> CPU<'a> {
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
     }
 
-    fn xaa(&mut self, address: u16, mode: AddressingMode){}
+    fn xaa(&mut self, address: u16, mode: AddressingMode) {
+        panic!("Not implemented!");
+    }
 }
 
 // The possible addressing modes of an instruction
