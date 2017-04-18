@@ -13,7 +13,10 @@ impl<'a> Memory<'a> {
         match address {
             // 2k of ram repeated 4 times
             0 ... 0x1fff => {
-                self.ram[address as usize % 0x800]
+                let data = self.ram[address as usize % 0x800];
+                //println!("Read {} from {}", data, address as usize % 0x800);
+
+                data
             },
 
             0x2000 ... 0x3fff => {
@@ -63,12 +66,14 @@ impl<'a> Memory<'a> {
         match address {
             // 2k of ram repeated 4 times
             0 ... 0x1fff => {
+                //println!("Writing {} at {}", data, address);
                 self.ram[address as usize % 0x800] = data;
+                //println!("Wrote {} at {}", self.ram[address as usize % 0x800], address as usize % 0x800);
             },
 
             0x2000 ... 0x3fff => {
                 let modaddr = address % 7;
-                println!("Write to PPU register: {}", modaddr);
+                //println!("Write to PPU register: {}", modaddr);
             },
 
             0x4000 ... 0x4017 => {

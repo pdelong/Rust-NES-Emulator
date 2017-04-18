@@ -95,8 +95,9 @@ impl<'a> CPU<'a> {
                 },
 
                 AddressingMode::IndirectIndexed => {
-                    let addr:u16 = ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16) + self.y as u16;
-                    ((memref.read(addr+1) as u16) << 8) + (memref.read(addr) as u16)
+                    let addr = memref.read(self.pc+1) as u16;
+                    let res = ((memref.read(addr+1) as u16) << 8) + (memref.read(addr) as u16) + self.y as u16;
+                    res
                 },
 
 
@@ -375,7 +376,7 @@ impl<'a> CPU<'a> {
         let memref = self.memory.borrow();
         let mem = memref.read(address);
         self.a = mem + self.a + self.c;
-        let res16:u16 = mem as u16 + self.a as u16 + self.c as u16;
+        let res16:u16 = mem as u16 + olda as u16 + self.c as u16;
 
         self.z = if self.a == 0 { 1 } else { 0 };
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
@@ -539,14 +540,15 @@ impl<'a> CPU<'a> {
     }
 
     fn dec(&mut self, address: u16, mode: AddressingMode) {
-        let memref = self.memory.borrow();
-        let mutref = &mut self.memory.borrow_mut();
-
-        let mem = memref.read(address).wrapping_sub(1);
+        let mem = {
+            let memref = self.memory.borrow();
+            memref.read(address).wrapping_sub(1)
+        };
 
         self.z = if mem == 0 { 1 } else { 0 };
         self.n = if mem & 0b10000000 != 0 { 1 } else { 0 };
 
+        let mutref = &mut self.memory.borrow_mut();
         mutref.write(mem, address);
     }
 
@@ -601,10 +603,18 @@ impl<'a> CPU<'a> {
     }
 
     fn jmp(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        println!("{}", address);
+        self.pc = address - 3;
     }
     fn jsr(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let memref = &mut self.memory.borrow_mut();
+
+        memref.write((self.pc & 0xff) as u8, self.sp as u16 + 1);
+        memref.write(((self.pc >> 8) & 0xff) as u8, self.sp as u16);
+
+        self.pc = address - 3;
+
+        self.sp = (self.sp as i8 + 2) as u8;
     }
 
     fn kil(&mut self, address: u16, mode: AddressingMode) {
@@ -647,24 +657,29 @@ impl<'a> CPU<'a> {
     fn lsr(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
-    fn nop(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
-    }
+
+    fn nop(&mut self, address: u16, mode: AddressingMode) {}
+
     fn ora(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
     fn pha(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
     fn php(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
     fn pla(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
     fn plp(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
 
     fn rla(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
@@ -693,7 +708,16 @@ impl<'a> CPU<'a> {
     }
 
     fn sbc(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let olda = self.a;
+        let memref = self.memory.borrow();
+        let mem = memref.read(address);
+        self.a = self.a.wrapping_sub(mem).wrapping_sub(1 - self.c);
+        let res16:u16 = (olda as u16).wrapping_sub(mem as u16).wrapping_sub((1 - self.c) as u16);
+
+        self.z = if self.a == 0 { 1 } else { 0 };
+        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+        self.c = if res16 > 0xFF { 1 } else { 0 };
+        self.v = if (olda ^ self.a) & 0b10000000 != 0 && (mem ^ olda) & 0b10000000 == 0 { 1 } else { 0 };
     }
 
     fn sec(&mut self, address: u16, mode: AddressingMode) {
