@@ -17,9 +17,19 @@ impl<'a> Memory<'a> {
             },
 
             0x2000 ... 0x3fff => {
-                let modaddr = address % 7;
+                let modaddr = address % 8;
                 println!("Read from PPU register: {}", modaddr);
-                0
+                match modaddr {
+                    0 => 0,
+                    1 => 0,
+                    2 => 0x80,
+                    3 => 0,
+                    4 => 0,
+                    5 => 0,
+                    6 => 0,
+                    7 => 0,
+                    _ => panic!("Mod 8 cannot return anything greater than 7 but somehow it did")
+                }
             },
 
             0x4000 ... 0x4017 => {

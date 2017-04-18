@@ -96,7 +96,7 @@ impl<'a> CPU<'a> {
 
                 AddressingMode::IndirectIndexed => {
                     let addr:u16 = ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16) + self.y as u16;
-                    ((memref.read(addr+self.pc+2) as u16) << 8) + (memref.read(addr+self.pc+1) as u16)
+                    ((memref.read(addr+1) as u16) << 8) + (memref.read(addr) as u16)
                 },
 
 
@@ -367,9 +367,7 @@ impl<'a> CPU<'a> {
 
         println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}", self.pc, address, str_name, self.a, self.x, self.y);
         fun(self, address, addr_mode);
-        if str_name != "BEQ" {
-            self.pc += size as u16;
-        }
+        self.pc += size as u16;
     }
 
     fn adc(&mut self, address: u16, mode: AddressingMode) {
@@ -427,23 +425,25 @@ impl<'a> CPU<'a> {
     fn axs(&mut self, address: u16, mode: AddressingMode){}
 
     /* All the branch instruction */
+    /* FIXME: address subtraction by 2 is not safe and should be fixed at some point although it
+     * probably won't cause issues because who would ever be executing in ram */
     fn bcc(&mut self, address: u16, mode: AddressingMode) {
         if self.c == 0 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
 
     fn bcs(&mut self, address: u16, mode: AddressingMode) {
         if self.c == 1 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
 
     fn beq(&mut self, address: u16, mode: AddressingMode) {
         if self.z == 1{
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
@@ -454,21 +454,21 @@ impl<'a> CPU<'a> {
 
     fn bmi(&mut self, address: u16, mode: AddressingMode) {
         if self.n == 1{
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
 
     fn bne(&mut self, address: u16, mode: AddressingMode) {
         if self.z == 0 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
 
     fn bpl(&mut self, address: u16, mode: AddressingMode) {
         if self.n == 0 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
@@ -479,14 +479,14 @@ impl<'a> CPU<'a> {
 
     fn bvc(&mut self, address: u16, mode: AddressingMode) {
         if self.v == 0 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
 
     fn bvs(&mut self, address: u16, mode: AddressingMode) {
         if self.v == 1 {
-            self.pc = address;
+            self.pc = address - 2;
             // TODO: Update cycles
         }
     }
@@ -638,7 +638,7 @@ impl<'a> CPU<'a> {
     fn ldy(&mut self, address: u16, mode: AddressingMode) {
         let memref = self.memory.borrow();
 
-        self.a = memref.read(address);
+        self.y = memref.read(address);
 
         self.z = if self.y == 0 { 1 } else { 0 };
         self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
