@@ -17,7 +17,9 @@ impl<'a> Memory<'a> {
             },
 
             0x2000 ... 0x3fff => {
-                panic!("0x2000 ... 0x3fff");
+                let modaddr = address % 7;
+                println!("Read from PPU register: {}", modaddr);
+                0
             },
 
             0x4000 ... 0x4017 => {
@@ -55,7 +57,8 @@ impl<'a> Memory<'a> {
             },
 
             0x2000 ... 0x3fff => {
-                panic!("0x2000 ... 0x3fff");
+                let modaddr = address % 7;
+                println!("Write to PPU register: {}", modaddr);
             },
 
             0x4000 ... 0x4017 => {

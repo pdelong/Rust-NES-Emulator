@@ -16,5 +16,10 @@ fn main() {
     let mut cpu = nes::cpu::CPU::new(RefCell::new(memory));
 
     cpu.step();
-
+    cpu.step();
+    cpu.step();
+    cpu.step();
+    cpu.step();
+    cpu.step();
+    cpu.step();
 }
