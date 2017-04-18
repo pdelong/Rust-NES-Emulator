@@ -14,7 +14,7 @@ impl<'a> Memory<'a> {
             // 2k of ram repeated 4 times
             0 ... 0x1fff => {
                 let data = self.ram[address as usize % 0x800];
-                //println!("Read {} from {}", data, address as usize % 0x800);
+                //println!("Read {:x} from {:x}", data, address as usize % 0x800);
 
                 data
             },
@@ -68,7 +68,7 @@ impl<'a> Memory<'a> {
             0 ... 0x1fff => {
                 //println!("Writing {} at {}", data, address);
                 self.ram[address as usize % 0x800] = data;
-                //println!("Wrote {} at {}", self.ram[address as usize % 0x800], address as usize % 0x800);
+                //println!("Wrote {:x} at {:x}", self.ram[address as usize % 0x800], address as usize % 0x800);
             },
 
             0x2000 ... 0x3fff => {

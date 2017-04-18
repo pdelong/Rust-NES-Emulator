@@ -1,3 +1,5 @@
+#![allow(unused_variables)]
+#![allow(dead_code)]
 use std::cell::RefCell;
 
 pub struct CPU<'a> {
@@ -566,7 +568,7 @@ impl<'a> CPU<'a> {
 
     fn eor(&mut self, address: u16, mode: AddressingMode) {
         let memref = self.memory.borrow();
-        let mem = memref.read(address) - 1;
+        let mem = memref.read(address);
 
         self.a = self.a ^ mem;
 
@@ -603,17 +605,18 @@ impl<'a> CPU<'a> {
     }
 
     fn jmp(&mut self, address: u16, mode: AddressingMode) {
-        println!("{}", address);
         self.pc = address - 3;
     }
     fn jsr(&mut self, address: u16, mode: AddressingMode) {
         let memref = &mut self.memory.borrow_mut();
 
-        memref.write((self.pc & 0xff) as u8, self.sp as u16 + 1);
-        memref.write(((self.pc >> 8) & 0xff) as u8, self.sp as u16);
+        let pcval = self.pc + 3 - 1;
+        memref.write(((pcval >> 8) & 0xff) as u8, self.sp as u16 + 0x100);
+        self.sp -= 1;
+        memref.write((pcval & 0xff) as u8, self.sp as u16 + 0x100);
+        self.sp -= 1;
 
         self.pc = address - 3;
-        self.sp = self.sp - 2;
     }
 
     fn kil(&mut self, address: u16, mode: AddressingMode) {
@@ -687,8 +690,8 @@ impl<'a> CPU<'a> {
     fn pha(&mut self, address: u16, mode: AddressingMode) {
         let mutref = &mut self.memory.borrow_mut();
 
-        mutref.write(self.a, self.sp as u16);
-        self.sp = (self.sp as i8 - 1) as u8;
+        mutref.write(self.a, self.sp as u16 + 0x100);
+        self.sp -= 1;
     }
 
     fn php(&mut self, address: u16, mode: AddressingMode) {
@@ -698,8 +701,8 @@ impl<'a> CPU<'a> {
     fn pla(&mut self, address: u16, mode: AddressingMode) {
         let memref = self.memory.borrow();
 
-        self.a = memref.read(self.sp as u16);
-        self.sp = (self.sp + 1) as u8;
+        self.sp += 1;
+        self.a = memref.read(self.sp as u16 + 0x100);
 
         self.z = if self.a == 0 { 1 } else { 0 };
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
@@ -717,8 +720,32 @@ impl<'a> CPU<'a> {
     fn rol(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
+
     fn ror(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        match mode {
+            AddressingMode::Accumulator => {
+                let (mut newval, overflow) = self.a.overflowing_shr(1);
+                newval |= self.c << 7;
+                self.a = newval;
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+
+            _ => {
+                let (mut newval, overflow) = {
+                    let memref = self.memory.borrow();
+                    memref.read(address).overflowing_shr(1)
+                };
+
+                newval |= self.c << 7;
+                let mutmem = &mut self.memory.borrow_mut();
+                mutmem.write(newval, address);
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+        }
     }
 
     fn rra(&mut self, address: u16, mode: AddressingMode) {
@@ -729,7 +756,14 @@ impl<'a> CPU<'a> {
         panic!("Not implemented!");
     }
     fn rts(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let memref = self.memory.borrow();
+
+        self.sp += 1;
+        let one = memref.read(self.sp as u16 + 0x100);
+        self.sp += 1;
+        let two = memref.read(self.sp as u16 + 0x100);
+
+        self.pc = ((two as u16) << 8) + (one as u16) + 1 - 1;
     }
 
     fn sax(&mut self, address: u16, mode: AddressingMode) {
@@ -828,7 +862,6 @@ impl<'a> CPU<'a> {
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
     }
 
-    #[allow(dead_code)]
     fn xaa(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
