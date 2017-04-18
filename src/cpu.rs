@@ -366,7 +366,7 @@ impl<'a> CPU<'a> {
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
         };
 
-        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}", self.pc, address, str_name, self.a, self.x, self.y);
+        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.sp);
         fun(self, address, addr_mode);
         self.pc += size as u16;
     }
@@ -613,8 +613,7 @@ impl<'a> CPU<'a> {
         memref.write(((self.pc >> 8) & 0xff) as u8, self.sp as u16);
 
         self.pc = address - 3;
-
-        self.sp = (self.sp as i8 + 2) as u8;
+        self.sp = self.sp - 2;
     }
 
     fn kil(&mut self, address: u16, mode: AddressingMode) {
@@ -655,7 +654,28 @@ impl<'a> CPU<'a> {
     }
 
     fn lsr(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        match mode {
+            AddressingMode::Accumulator => {
+                let (newval, overflow) = self.a.overflowing_shr(1);
+                self.a = newval;
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+
+            _ => {
+                let (newval, overflow) = {
+                    let memref = self.memory.borrow();
+                    memref.read(address).overflowing_shr(1)
+                };
+
+                let mutmem = &mut self.memory.borrow_mut();
+                mutmem.write(newval, address);
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+        }
     }
 
     fn nop(&mut self, address: u16, mode: AddressingMode) {}
@@ -665,7 +685,10 @@ impl<'a> CPU<'a> {
     }
 
     fn pha(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let mutref = &mut self.memory.borrow_mut();
+
+        mutref.write(self.a, self.sp as u16);
+        self.sp = (self.sp as i8 - 1) as u8;
     }
 
     fn php(&mut self, address: u16, mode: AddressingMode) {
@@ -673,7 +696,13 @@ impl<'a> CPU<'a> {
     }
 
     fn pla(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let memref = self.memory.borrow();
+
+        self.a = memref.read(self.sp as u16);
+        self.sp = (self.sp + 1) as u8;
+
+        self.z = if self.a == 0 { 1 } else { 0 };
+        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
     }
 
     fn plp(&mut self, address: u16, mode: AddressingMode) {
