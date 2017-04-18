@@ -77,26 +77,30 @@ impl<'a> CPU<'a> {
                     }
                 },
 
-                AddressingMode::Absolute => ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16),
 
-                AddressingMode::AbsoluteX => ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16) + self.x as u16,
+                AddressingMode::Absolute => ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16),
 
-                AddressingMode::AbsoluteY => ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16) + self.y as u16,
+                AddressingMode::AbsoluteX => ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16) + self.x as u16,
+
+                AddressingMode::AbsoluteY => ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16) + self.y as u16,
 
                 AddressingMode::Indirect => {
-                    let addr:u16 = ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16);
+                    let addr:u16 = ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16);
                     ((memref.read(addr+self.pc+1) as u16) << 8) + (memref.read(addr+self.pc+2) as u16)
                 },
 
                 AddressingMode::IndexedIndirect => {
-                    let addr:u16 = ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16);
-                    ((memref.read(addr+self.pc+1+self.x as u16) as u16) << 8) + (memref.read(addr+self.pc+2+self.x as u16) as u16)
+                    let addr:u16 = ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16);
+                    ((memref.read(addr+1+self.x as u16) as u16) << 8) + (memref.read(addr+self.x as u16) as u16)
                 },
 
                 AddressingMode::IndirectIndexed => {
-                    let addr:u16 = ((memref.read(self.pc+1) as u16) << 8) + (memref.read(self.pc+2) as u16) + self.x as u16;
-                    ((memref.read(addr+self.pc+1) as u16) << 8) + (memref.read(addr+self.pc+2) as u16)
+                    let addr:u16 = ((memref.read(self.pc+2) as u16) << 8) + (memref.read(self.pc+1) as u16) + self.y as u16;
+                    ((memref.read(addr+self.pc+2) as u16) << 8) + (memref.read(addr+self.pc+1) as u16)
                 },
+
+
+
             };
 
             let fun = match opcode {
@@ -530,7 +534,7 @@ impl<'a> CPU<'a> {
         let memref = self.memory.borrow();
         let mutref = &mut self.memory.borrow_mut();
 
-        let mem = memref.read(address) - 1;
+        let mem = memref.read(address).wrapping_sub(1);
 
         self.z = if mem == 0 { 1 } else { 0 };
         self.n = if mem & 0b10000000 != 0 { 1 } else { 0 };
@@ -539,13 +543,13 @@ impl<'a> CPU<'a> {
     }
 
     fn dex(&mut self, address: u16, mode: AddressingMode) {
-        self.x -= 1;
+        self.x = self.x.wrapping_sub(1);
         self.z = if self.x == 0 { 1 } else { 0 };
         self.n = if self.x & 0b10000000 != 0 { 1 } else { 0 };
     }
 
     fn dey(&mut self, address: u16, mode: AddressingMode){
-        self.y -= 1;
+        self.y = self.y.wrapping_sub(1);
         self.z = if self.y == 0 { 1 } else { 0 };
         self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
     }
@@ -564,7 +568,7 @@ impl<'a> CPU<'a> {
         let memref = self.memory.borrow();
         let mutref = &mut self.memory.borrow_mut();
 
-        let mem = memref.read(address) + 1;
+        let mem = memref.read(address).wrapping_add(1);
 
         self.z = if mem == 0 { 1 } else { 0 };
         self.n = if mem & 0b10000000 != 0 { 1 } else { 0 };
@@ -573,13 +577,13 @@ impl<'a> CPU<'a> {
     }
 
     fn inx(&mut self, address: u16, mode: AddressingMode) {
-        self.x += 1;
+        self.x = self.x.wrapping_add(1);
         self.z = if self.x == 0 { 1 } else { 0 };
         self.n = if self.x & 0b10000000 != 0 { 1 } else { 0 };
     }
 
     fn iny(&mut self, address: u16, mode: AddressingMode) {
-        self.y += 1;
+        self.y = self.y.wrapping_add(1);
         self.z = if self.y == 0 { 1 } else { 0 };
         self.n = if self.y & 0b10000000 != 0 { 1 } else { 0 };
     }
