@@ -27,7 +27,7 @@ pub struct CPU<'a> {
     n: u8,  // Negative
 
     interrupt: u8,
-    stall: u32
+    // stall: u32
 }
 
 impl<'a> CPU<'a> {
@@ -52,7 +52,7 @@ impl<'a> CPU<'a> {
             v: 0,   
             n: 0,   
             interrupt: 0,
-            stall: 0
+            //stall: 0
         }
     }
 
@@ -71,9 +71,9 @@ impl<'a> CPU<'a> {
                 AddressingMode::Relative => {
                     let offset:i8 = memref.read(self.pc + 1) as i8;
                     if offset < 0 {
-                        self.pc + 2 + (-offset as u16)
+                        (self.pc + 2).wrapping_add((offset as i16) as u16)
                     } else {
-                        self.pc + 2 + (offset as u16)
+                        (self.pc + 2).wrapping_add(offset as u16)
                     }
                 },
 
@@ -365,9 +365,11 @@ impl<'a> CPU<'a> {
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
         };
 
-        println!("{} {} {} A: {} X: {} Y: {}", self.pc, address, str_name, self.a, self.x, self.y);
+        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}", self.pc, address, str_name, self.a, self.x, self.y);
         fun(self, address, addr_mode);
-        self.pc += size as u16;
+        if str_name != "BEQ" {
+            self.pc += size as u16;
+        }
     }
 
     fn adc(&mut self, address: u16, mode: AddressingMode) {
@@ -773,6 +775,7 @@ impl<'a> CPU<'a> {
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
     }
 
+    #[allow(dead_code)]
     fn xaa(&mut self, address: u16, mode: AddressingMode) {
         panic!("Not implemented!");
     }
@@ -813,12 +816,6 @@ pub struct Instruction<'a> {
 
     // Actual size of the instruction besides the 1 byte opcode
     size: u32,
-}
-
-impl<'a> Instruction<'a> {
-    fn print(&self) {
-        println!("{}", self.str_name);
-    }
 }
 
 // All possible instructions and their properties. This makes decoding as simple as an array lookup

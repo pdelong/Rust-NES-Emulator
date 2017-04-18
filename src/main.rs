@@ -15,7 +15,7 @@ fn main() {
     let memory = nes::memory::Memory::new(&cartridge);
     let mut cpu = nes::cpu::CPU::new(RefCell::new(memory));
 
-    for step in 0..10 {
+    for _ in 0..20 {
         cpu.step();
     }
 }

@@ -22,8 +22,7 @@ impl INesInfo {
         let chrsize = 0x2000 * chrunits as usize;
 
         let mut rest1 = result.split_off(16);
-        let header = result;
-        let mut rest2 = rest1.split_off(prgsize as usize);
+        let rest2 = rest1.split_off(prgsize as usize);
         let prgrom = rest1;
         let chrrom = rest2;
 
