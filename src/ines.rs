@@ -18,7 +18,7 @@ impl INesInfo {
         let prgunits = result[4];
         let chrunits = result[5];
 
-        let prgsize = 0x4000 * prgunits as usize; 
+        let prgsize = 0x4000 * prgunits as usize;
         let chrsize = 0x2000 * chrunits as usize;
 
         let mut rest1 = result.split_off(16);
