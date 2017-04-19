@@ -8,17 +8,17 @@ pub struct CPU<'a> {
     cycles: u64,
 
     // Program Counter
-    pc: u16, 
+    pc: u16,
 
     // Stack Pointer
-    sp: u8,   
+    sp: u8,
 
     // Accumulator
-    a: u8,   
+    a: u8,
 
     // General Purpose Registers
-    x: u8,   
-    y: u8,   
+    x: u8,
+    y: u8,
 
     /*** Flags ***/
     c: u8,  // Carry
@@ -43,16 +43,16 @@ impl<'a> CPU<'a> {
             memory: mem,
             cycles: 0,
             pc: pcval,
-            sp: 0xfd,   
-            a: 0,   
-            x: 0,   
-            y: 0,   
-            c: 0,   
-            z: 0,   
-            i: 0,   
-            d: 0,   
-            v: 0,   
-            n: 0,   
+            sp: 0xfd,
+            a: 0,
+            x: 0,
+            y: 0,
+            c: 0,
+            z: 0,
+            i: 0,
+            d: 0,
+            v: 0,
+            n: 0,
             interrupt: 0,
             //stall: 0
         }
@@ -362,7 +362,7 @@ impl<'a> CPU<'a> {
                 0xfc => CPU::nop,
                 0xfd => CPU::sbc,
                 0xfe => CPU::inc,
-                0xff => CPU::isc, 
+                0xff => CPU::isc,
                 _ => panic!("Byte holding larger than 0xff"),
             };
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
@@ -808,7 +808,7 @@ impl<'a> CPU<'a> {
         panic!("Not implemented!");
     }
 
-    fn sta(&mut self, address: u16, mode: AddressingMode) { 
+    fn sta(&mut self, address: u16, mode: AddressingMode) {
         let mutref = &mut self.memory.borrow_mut();
 
         mutref.write(self.a, address);
