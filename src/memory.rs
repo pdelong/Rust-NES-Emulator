@@ -1,12 +1,17 @@
-pub struct Memory<'a> {
-    ram: Vec<u8>,
-    cart: &'a ::cartridge::Cartridge,
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub struct CPUMemoryMap {
+    pub ppu: ::ppu::PPU,
+    pub ram: Vec<u8>,
+    // input
+    pub cart: Rc<RefCell<::cartridge::Cartridge>>,
 }
 
 // For now I'm just gonna assume NROM-128 because I'm just focusing on Donkey Kong
-impl<'a> Memory<'a> {
-    pub fn new(cart: &'a ::cartridge::Cartridge) -> Memory<'a> {
-        Memory{ram: vec![0; 2048], cart: &cart}
+impl CPUMemoryMap {
+    pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>, ppu: ::ppu::PPU) -> CPUMemoryMap {
+        CPUMemoryMap{ram: vec![0; 2048], cart: cart, ppu: ppu}
     }
 
     pub fn read(&self, address: u16) -> u8 {
@@ -50,13 +55,15 @@ impl<'a> Memory<'a> {
 
             // First 16k of ROM
             0x8000 ... 0xBFFF => {
-                self.cart.rom[address as usize - 0x8000]
+                let cart = self.cart.borrow();
+                cart.rom[address as usize - 0x8000]
             }
 
             // Last 16k of ROM (just a mirror for NROM-128)
             0xC000 ... 0xFFFF => {
                 // REMEMBER THIS IS A MIRROR OF THE PREVIOUS BECAUSE NROM 128
-                self.cart.rom[address as usize - 0xC000]
+                let cart = self.cart.borrow();
+                cart.rom[address as usize - 0xC000]
             }
             _ => 0
         }

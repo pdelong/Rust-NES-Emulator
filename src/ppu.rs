@@ -1,4 +1,7 @@
-struct PPU {
+use std::rc::Rc;
+use std::cell::RefCell;
+
+pub struct PPU {
     // PPU registers
     v: u16,  // current vram address (15 bit)
     t: u16,  // temporary vram address (15 bit)
@@ -48,7 +51,7 @@ struct PPU {
 }
 
 impl PPU {
-    fn new() -> PPU {
+    pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPU {
         PPU {
             v: 0,
             t: 0,

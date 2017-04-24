@@ -1,6 +1,5 @@
-struct Console<'a> {
-    cpu: ::cpu::CPU<'a>,
-    ppu: ::ppu::PPU<'a>,
+struct Console {
+    ppu: ::ppu::PPU,
     cart: ::cartridge::Cartridge,
     ram: Vec<u8>
 }
