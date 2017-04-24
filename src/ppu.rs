@@ -30,6 +30,7 @@ pub struct PPU {
 
     // $2002 - PPU Status Register
     /* 5 UNKNOWN BITS HERE */
+    flag_overflow: u8,
     flag_hit: u8,
     flag_vblank: u8,
 
@@ -77,6 +78,7 @@ impl PPU {
             flag_background_color: 0,
 
             // $2002 - PPU Status Register
+            flag_overflow: 0,
             flag_hit: 0,
             flag_vblank: 0,
 
@@ -92,7 +94,39 @@ impl PPU {
         }
     }
 
-    fn step(&mut self) {
+    pub fn step(&mut self) {
 
+    }
+
+    pub fn read_control_1(&self) -> u8{
+        0
+    }
+
+    pub fn read_control_2(&self) -> u8{
+        0
+    }
+
+    pub fn read_status(&self) -> u8{
+        0x80
+    }
+
+    pub fn read_oamaddr(&self) -> u8{
+        0
+    }
+
+    pub fn read_unknown4(&self) -> u8{
+        0
+    }
+
+    pub fn read_scroll_offset(&self) -> u8{
+        0
+    }
+
+    pub fn read_addr_offset(&self) -> u8{
+        0
+    }
+
+    pub fn read_unknown7(&self) -> u8{
+        0
     }
 }

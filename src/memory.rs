@@ -28,14 +28,14 @@ impl CPUMemoryMap {
                 let modaddr = address % 8;
                 println!("Read from PPU register: {}", modaddr);
                 match modaddr {
-                    0 => 0,
-                    1 => 0,
-                    2 => 0x80,
-                    3 => 0,
-                    4 => 0,
-                    5 => 0,
-                    6 => 0,
-                    7 => 0,
+                    0 => self.ppu.read_control_1(),
+                    1 => self.ppu.read_control_2(),
+                    2 => self.ppu.read_status(),
+                    3 => self.ppu.read_oamaddr(),
+                    4 => self.ppu.read_unknown4(),
+                    5 => self.ppu.read_scroll_offset(),
+                    6 => self.ppu.read_addr_offset(),
+                    7 => self.ppu.read_unknown7(),
                     _ => panic!("Mod 8 cannot return anything greater than 7 but somehow it did")
                 }
             },
