@@ -8,6 +8,12 @@ pub struct CPUMemoryMap {
     pub cart: Rc<RefCell<::cartridge::Cartridge>>,
 }
 
+pub struct PPUMemoryMap {
+    pub vram: Box<[u8]>,
+    pub cart: Rc<RefCell<::cartridge::Cartridge>>,
+    pub palettes: Box<[u8]>
+}
+
 // For now I'm just gonna assume NROM-128 because I'm just focusing on Donkey Kong
 impl CPUMemoryMap {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>, ppu: ::ppu::PPU) -> CPUMemoryMap {
@@ -117,7 +123,48 @@ impl CPUMemoryMap {
                 // REMEMBER THIS IS A MIRROR OF THE PREVIOUS BECAUSE NROM 128
                 panic!("Attempt to write to ROM");
             }
-            _ => panic!("Whelp shit")
+            _ => panic!("Write to an address outside of CPU memory range")
+        }
+    }
+}
+
+impl PPUMemoryMap {
+    pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPUMemoryMap {
+        PPUMemoryMap{vram: Box::new([0; 0x800]) , cart: cart, palettes: Box::new([0; 0x800])}
+    }
+
+    pub fn read(&self, address: u16) -> u8 {
+        match address {
+            0 ... 0x1FFF => {
+                let cart = self.cart.borrow();
+                cart.rom[address as usize]
+            },
+
+            0x2000 ... 0x3EFF => {
+                self.vram[address as usize % 0x800]
+            }
+
+            0x3F00 ... 0x3FFF => {
+                self.palettes[address as usize % 0x20]
+            }
+            _ => panic!("Read from outside of PPU memory")
+        }
+    }
+
+    pub fn write(&mut self, data: u8, address: u16) {
+        match address {
+            0 ... 0x1FFF => {
+                panic!("Attempt to write to ROM");
+            },
+
+            0x2000 ... 0x3EFF => {
+                self.vram[address as usize % 0x800] = data;
+            }
+
+            0x3F00 ... 0x3FFF => {
+                self.palettes[address as usize % 0x20] = data;
+            }
+            _ => panic!("Read from outside of PPU memory")
         }
     }
 }

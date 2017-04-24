@@ -9,6 +9,10 @@ pub struct PPU {
     w: u8,   // write toggle (1 bit)
     f: u8,   // even/odd frame flag (1 bit)
 
+    memory: ::memory::PPUMemoryMap,
+
+    oam: [u8; 256],
+
     register: u8,
 
     // $2000 - PPU Control Register 1
@@ -63,6 +67,10 @@ impl PPU {
             w: 0,
             f: 0,
 
+            oam: [0; 256],
+
+            memory: ::memory::PPUMemoryMap::new(cart),
+
             register: 0,
 
             // $2000 - PPU Control Register 1
@@ -97,7 +105,7 @@ impl PPU {
             // $2006
             memory_address_lo: 0,
             memory_address_hi: 0,
-            memory_address_select: false,
+            memory_address_select: true,
         }
     }
 
@@ -172,21 +180,27 @@ impl PPU {
     }
 
     pub fn write_scroll_offset(&mut self, data: u8) {
+        // FIXME: Need to write twice
         self.scroll_offset = data;
     }
 
     pub fn write_addr_offset(&mut self, data: u8) {
         // FIXME: Mirroring
+        // FIXME: Also updating the correct internal registers
         if self.memory_address_select {
             self.memory_address_select = false;
             self.memory_address_hi = data;
         } else {
             self.memory_address_select = true;
             self.memory_address_lo = data;
+            self.v = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
+            println!("{}", self.v);
         }
     }
 
     pub fn write_ppudata(&mut self, data: u8) {
-        panic!("Write PPU data not implemented yet");
+        self.memory.write(data, self.v);
+        self.v += if self.flag_vertical_write { 32 } else { 1 };
     }
 }
+
