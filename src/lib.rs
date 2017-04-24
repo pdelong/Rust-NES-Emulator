@@ -5,4 +5,3 @@ pub mod ppu;
 pub mod apu;
 pub mod mapper;
 pub mod ines;
-pub mod console;

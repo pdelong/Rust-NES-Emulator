@@ -3,7 +3,7 @@ use std::cell::RefCell;
 
 pub struct CPUMemoryMap {
     pub ppu: ::ppu::PPU,
-    pub ram: Vec<u8>,
+    pub ram: Box<[u8]>,
     // input
     pub cart: Rc<RefCell<::cartridge::Cartridge>>,
 }
@@ -11,7 +11,7 @@ pub struct CPUMemoryMap {
 // For now I'm just gonna assume NROM-128 because I'm just focusing on Donkey Kong
 impl CPUMemoryMap {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>, ppu: ::ppu::PPU) -> CPUMemoryMap {
-        CPUMemoryMap{ram: vec![0; 2048], cart: cart, ppu: ppu}
+        CPUMemoryMap{ram: Box::new([0; 0x800]) , cart: cart, ppu: ppu}
     }
 
     pub fn read(&self, address: u16) -> u8 {
