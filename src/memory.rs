@@ -32,10 +32,10 @@ impl CPUMemoryMap {
                     1 => self.ppu.read_control_2(),
                     2 => self.ppu.read_status(),
                     3 => self.ppu.read_oamaddr(),
-                    4 => self.ppu.read_unknown4(),
+                    4 => self.ppu.read_oamdata(),
                     5 => self.ppu.read_scroll_offset(),
                     6 => self.ppu.read_addr_offset(),
-                    7 => self.ppu.read_unknown7(),
+                    7 => self.ppu.read_ppudata(),
                     _ => panic!("Mod 8 cannot return anything greater than 7 but somehow it did")
                 }
             },
@@ -79,8 +79,19 @@ impl CPUMemoryMap {
             },
 
             0x2000 ... 0x3fff => {
-                let modaddr = address % 7;
-                //println!("Write to PPU register: {}", modaddr);
+                let modaddr = address % 8;
+                println!("Write to PPU register: {}", modaddr);
+                match modaddr {
+                    0 => self.ppu.write_control_1(data),
+                    1 => self.ppu.write_control_2(data),
+                    2 => self.ppu.write_status(data),
+                    3 => self.ppu.write_oamaddr(data),
+                    4 => self.ppu.write_oamdata(data),
+                    5 => self.ppu.write_scroll_offset(data),
+                    6 => self.ppu.write_addr_offset(data),
+                    7 => self.ppu.write_ppudata(data),
+                    _ => panic!("Mod 8 cannot return anything greater than 7 but somehow it did")
+                }
             },
 
             0x4000 ... 0x4017 => {
