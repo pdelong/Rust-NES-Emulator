@@ -75,6 +75,12 @@ impl CPUMemoryMap {
         }
     }
 
+    pub fn read16(&self, address: u16) -> u16 {
+            let lo = self.read(address) as u16;
+            let hi = self.read(address + 1) as u16;
+            hi << 8 | lo
+    }
+
     pub fn write(&mut self, data: u8, address: u16) {
         match address {
             // 2k of ram repeated 4 times

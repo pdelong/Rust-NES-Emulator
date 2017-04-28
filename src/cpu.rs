@@ -89,35 +89,33 @@ impl CPU {
                 },
 
 
-                AddressingMode::Absolute => ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16),
+                AddressingMode::Absolute => self.memory.read16(self.pc+1),
 
                 AddressingMode::AbsoluteX => {
-                    let addr = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.x as u16;
+                    let addr = self.memory.read16(self.pc+1) + self.x as u16;
                     page_crossed = pages_differ(addr - self.x as u16, addr);
                     addr
                 },
 
                 AddressingMode::AbsoluteY => {
-                    let addr = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.y as u16;
+                    let addr = self.memory.read16(self.pc+1) + self.y as u16;
                     page_crossed = pages_differ(addr - self.y as u16, addr);
                     addr
                 },
 
                 AddressingMode::Indirect => {
-                    let addr:u16 = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16);
-                    ((self.memory.read(addr+self.pc+1) as u16) << 8) + (self.memory.read(addr+self.pc+2) as u16)
+                    self.memory.read16(self.memory.read16(self.pc+1))
                 },
 
                 AddressingMode::IndexedIndirect => {
-                    let addr:u16 = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16);
-                    ((self.memory.read(addr+1+self.x as u16) as u16) << 8) + (self.memory.read(addr+self.x as u16) as u16)
+                    self.memory.read16(self.memory.read(self.pc+1) as u16 + self.x as u16)
                 },
 
                 AddressingMode::IndirectIndexed => {
-                    let addr = self.memory.read(self.pc+1) as u16;
-                    let res = ((self.memory.read(addr+1) as u16) << 8) + (self.memory.read(addr) as u16) + self.y as u16;
-                    page_crossed = pages_differ(res - self.y as u16, addr);
-                    res
+                    let addr = self.memory.read16(self.memory.read(self.pc+1) as u16) + self.y as u16;
+
+                    page_crossed = pages_differ(addr - self.y as u16, addr);
+                    addr
                 },
 
             };
