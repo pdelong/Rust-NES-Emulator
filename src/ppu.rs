@@ -2,18 +2,18 @@ use std::rc::Rc;
 use std::cell::RefCell;
 
 pub struct PPU {
-    // PPU registers
-    v: u16,  // current vram address (15 bit)
-    t: u16,  // temporary vram address (15 bit)
-    x: u8,   // fine x scroll (3 bit)
-    w: u8,   // write toggle (1 bit)
-    f: u8,   // even/odd frame flag (1 bit)
+    // The cycle number of the current scanline
+    cycle: usize,
+
+    // The current scanline number
+    scanline: usize,
+
+    // Current address
+    addr: u16,
 
     memory: ::memory::PPUMemoryMap,
 
     oam: [u8; 256],
-
-    register: u8,
 
     // $2000 - PPU Control Register 1
     flag_table_address: u8,
@@ -61,17 +61,14 @@ pub struct PPU {
 impl PPU {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPU {
         PPU {
-            v: 0,
-            t: 0,
-            x: 0,
-            w: 0,
-            f: 0,
+            cycle: 0,
+            scanline: 0,
 
             oam: [0; 256],
 
             memory: ::memory::PPUMemoryMap::new(cart),
 
-            register: 0,
+            addr: 0,
 
             // $2000 - PPU Control Register 1
             flag_table_address: 0,
@@ -109,7 +106,31 @@ impl PPU {
         }
     }
 
+    // Run one cycle
     pub fn step(&mut self) {
+        if self.scanline == 241 && self.cycle == 1 {
+            // Trigger NMI
+            self.flag_vblank = true;
+        }
+
+        if self.scanline == 261 && self.cycle == 1 {
+            self.flag_vblank = false;
+        }
+
+        // We're done with one scanline and maybe a frame
+        if self.cycle > 340 {
+            self.cycle = 0;
+            self.scanline += 1;
+            if self.scanline > 261 {
+                self.scanline = 0;
+            }
+        }
+
+        // Render a pixel
+
+        // Fetch data from memory if necessary
+
+        // TODO: Do sprites and stuff
 
     }
 
@@ -193,14 +214,32 @@ impl PPU {
         } else {
             self.memory_address_select = true;
             self.memory_address_lo = data;
-            self.v = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
-            println!("{}", self.v);
+            self.addr = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
+            println!("{}", self.addr);
         }
     }
 
     pub fn write_ppudata(&mut self, data: u8) {
-        self.memory.write(data, self.v);
-        self.v += if self.flag_vertical_write { 32 } else { 1 };
+        self.memory.write(data, self.addr);
+        self.addr += if self.flag_vertical_write { 32 } else { 1 };
     }
 }
 
+ const PALETTE: [u8; 192] = [
+    124,124,124,    0,0,252,        0,0,188,        68,40,188,
+    148,0,132,      168,0,32,       168,16,0,       136,20,0,
+    80,48,0,        0,120,0,        0,104,0,        0,88,0,
+    0,64,88,        0,0,0,          0,0,0,          0,0,0,
+    188,188,188,    0,120,248,      0,88,248,       104,68,252,
+    216,0,204,      228,0,88,       248,56,0,       228,92,16,
+    172,124,0,      0,184,0,        0,168,0,        0,168,68,
+    0,136,136,      0,0,0,          0,0,0,          0,0,0,
+    248,248,248,    60,188,252,     104,136,252,    152,120,248,
+    248,120,248,    248,88,152,     248,120,88,     252,160,68,
+    248,184,0,      184,248,24,     88,216,84,      88,248,152,
+    0,232,216,      120,120,120,    0,0,0,          0,0,0,
+    252,252,252,    164,228,252,    184,184,248,    216,184,248,
+    248,184,248,    248,164,192,    240,208,176,    252,224,168,
+    248,216,120,    216,248,120,    184,248,184,    184,248,216,
+    0,252,252,      248,216,248,    0,0,0,          0,0,0
+];
