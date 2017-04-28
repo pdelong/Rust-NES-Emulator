@@ -19,6 +19,6 @@ fn main() {
     let mut cpu = nes::cpu::CPU::new(memory_map);
 
     for _ in 0..20000 {
-        cpu.step();
+        println!("{}", cpu.step());
     }
 }

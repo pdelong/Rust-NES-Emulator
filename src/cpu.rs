@@ -1,12 +1,13 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
-use std::cell::RefCell;
-
 
 pub struct CPU {
     pub memory: ::memory::CPUMemoryMap,
     // Number of cycles executed so far
     cycles: u64,
+
+    // Cycles for this step
+    this_cycles: u8,
 
     // Program Counter
     pc: u16,
@@ -33,6 +34,11 @@ pub struct CPU {
     // stall: u32
 }
 
+
+fn pages_differ(one: u16, two: u16) -> bool {
+    one & 0xFF00 != two & 0xFF00
+}
+
 impl CPU {
     pub fn new(mem: ::memory::CPUMemoryMap) -> CPU {
         let pcval = {
@@ -42,6 +48,7 @@ impl CPU {
         CPU {
             memory: mem,
             cycles: 0,
+            this_cycles: 0,
             pc: pcval,
             sp: 0xfd,
             a: 0,
@@ -58,10 +65,13 @@ impl CPU {
         }
     }
 
-    pub fn step(&mut self) {
+    pub fn step(&mut self) -> u8 {
+        self.this_cycles = 0;
+
         let (fun, address, addr_mode, size, str_name) = {
             let opcode = self.memory.read(self.pc);
             let instruction = &INSTRUCTIONS[opcode as usize];
+            let mut page_crossed = false;
             let address:u16 = match instruction.addr_mode {
                 AddressingMode::Implicit => 0,
                 AddressingMode::Accumulator => 0,
@@ -81,9 +91,17 @@ impl CPU {
 
                 AddressingMode::Absolute => ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16),
 
-                AddressingMode::AbsoluteX => ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.x as u16,
+                AddressingMode::AbsoluteX => {
+                    let addr = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.x as u16;
+                    page_crossed = pages_differ(addr - self.x as u16, addr);
+                    addr
+                },
 
-                AddressingMode::AbsoluteY => ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.y as u16,
+                AddressingMode::AbsoluteY => {
+                    let addr = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16) + self.y as u16;
+                    page_crossed = pages_differ(addr - self.y as u16, addr);
+                    addr
+                },
 
                 AddressingMode::Indirect => {
                     let addr:u16 = ((self.memory.read(self.pc+2) as u16) << 8) + (self.memory.read(self.pc+1) as u16);
@@ -98,10 +116,9 @@ impl CPU {
                 AddressingMode::IndirectIndexed => {
                     let addr = self.memory.read(self.pc+1) as u16;
                     let res = ((self.memory.read(addr+1) as u16) << 8) + (self.memory.read(addr) as u16) + self.y as u16;
+                    page_crossed = pages_differ(res - self.y as u16, addr);
                     res
                 },
-
-
 
             };
 
@@ -364,12 +381,16 @@ impl CPU {
                 0xff => CPU::isc,
                 _ => panic!("Byte holding larger than 0xff"),
             };
+
+            self.this_cycles = instruction.cycles + if page_crossed { instruction.page_delay } else { 0 };
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
         };
 
         println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.sp);
         fun(self, address, addr_mode);
         self.pc += size as u16;
+
+        self.this_cycles
     }
 
     fn adc(&mut self, address: u16, mode: AddressingMode) {
@@ -428,21 +449,21 @@ impl CPU {
     fn bcc(&mut self, address: u16, mode: AddressingMode) {
         if self.c == 0 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
     fn bcs(&mut self, address: u16, mode: AddressingMode) {
         if self.c == 1 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
     fn beq(&mut self, address: u16, mode: AddressingMode) {
         if self.z == 1{
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
@@ -453,21 +474,21 @@ impl CPU {
     fn bmi(&mut self, address: u16, mode: AddressingMode) {
         if self.n == 1{
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
     fn bne(&mut self, address: u16, mode: AddressingMode) {
         if self.z == 0 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
     fn bpl(&mut self, address: u16, mode: AddressingMode) {
         if self.n == 0 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
@@ -478,14 +499,14 @@ impl CPU {
     fn bvc(&mut self, address: u16, mode: AddressingMode) {
         if self.v == 0 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
     fn bvs(&mut self, address: u16, mode: AddressingMode) {
         if self.v == 1 {
             self.pc = address - 2;
-            // TODO: Update cycles
+            self.this_cycles += if pages_differ(self.pc, address) { 1 } else { 0 };
         }
     }
 
@@ -851,10 +872,10 @@ pub struct Instruction<'a> {
     str_name: &'a str,
 
     // The cycle delay encountered when crossing page boundary
-    page_delay: u32,
+    page_delay: u8,
 
     // Number of cycles used by the instruction without any penalties
-    cycles: u32,
+    cycles: u8,
 
     // Addressing mode used in memory lookup
     addr_mode: AddressingMode,
