@@ -39,6 +39,7 @@ pub struct PPU {
     flag_overflow: bool,
     flag_hit: bool,
     flag_vblank: bool,
+    pub nmi: bool,
 
     // $2003 - OAMADDR
     oamaddr: u8,
@@ -91,7 +92,8 @@ impl PPU {
             // $2002 - PPU Status Register
             flag_overflow: false,
             flag_hit: false,
-            flag_vblank: true,
+            flag_vblank: false,
+            nmi: false,
 
             // $2003 - OAMADDR
             oamaddr: 0,
@@ -106,11 +108,18 @@ impl PPU {
         }
     }
 
+    pub fn step(&mut self, cycles: u8) {
+        for i in 0..cycles {
+            self.cycle();
+        }
+    }
+
     // Run one cycle
-    pub fn step(&mut self) {
+    pub fn cycle(&mut self) {
         if self.scanline == 241 && self.cycle == 1 {
             // Trigger NMI
             self.flag_vblank = true;
+            self.nmi = true;
         }
 
         if self.scanline == 261 && self.cycle == 1 {
@@ -125,6 +134,8 @@ impl PPU {
                 self.scanline = 0;
             }
         }
+
+        self.cycle += 1;
 
         // Render a pixel
 

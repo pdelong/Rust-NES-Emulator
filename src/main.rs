@@ -1,6 +1,13 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use nes::ines::INesInfo;
+use nes::cartridge::Cartridge;
+use nes::ppu::PPU;
+use nes::memory::CPUMemoryMap;
+use nes::cpu::{CPU,Interrupt};
+
+
 extern crate nes;
 
 fn main() {
@@ -11,14 +18,16 @@ fn main() {
         std::process::exit(1);
     }
 
-    let info = nes::ines::INesInfo::new(&args[1]);
-    let cartridge = nes::cartridge::Cartridge::new(info);
+    let info = INesInfo::new(&args[1]);
+    let cartridge = Cartridge::new(info);
     let cartridge = Rc::new(RefCell::new(cartridge));
-    let ppu = nes::ppu::PPU::new(cartridge.clone());
-    let memory_map = nes::memory::CPUMemoryMap::new(cartridge, ppu);
-    let mut cpu = nes::cpu::CPU::new(memory_map);
+    let ppu = PPU::new(cartridge.clone());
+    let memory_map = CPUMemoryMap::new(cartridge, ppu);
+    let mut cpu = CPU::new(memory_map);
 
     for _ in 0..20000 {
-        println!("{}", cpu.step());
+        let int = if (cpu.memory.ppu.nmi == true) { cpu.memory.ppu.nmi = false; Interrupt::IntNMI } else { Interrupt::IntNone };
+        let cycles = cpu.step(int);
+        cpu.memory.ppu.step(cycles*3);
     }
 }

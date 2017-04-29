@@ -27,11 +27,19 @@ pub struct CPU {
     z: u8,  // Zero
     i: u8,  // Interrupt Mask
     d: u8,  // Decimal (NEVER USED)
+    b: u8,  // This doesn't do anything
+    u: u8,  // Unused
     v: u8,  // Overflow
     n: u8,  // Negative
 
     interrupt: u8,
     // stall: u32
+}
+
+pub enum Interrupt {
+    IntNMI,
+    IntIRQ,
+    IntNone,
 }
 
 
@@ -58,6 +66,8 @@ impl CPU {
             z: 0,
             i: 0,
             d: 0,
+            b: 0,
+            u: 0,
             v: 0,
             n: 0,
             interrupt: 0,
@@ -65,8 +75,37 @@ impl CPU {
         }
     }
 
-    pub fn step(&mut self) -> u8 {
+    fn push(&mut self, data: u8) {
+        self.memory.write(data, self.sp as u16 + 0x100);
+        self.sp -= 1;
+    }
+
+    fn push16(&mut self, data: u16) {
+        self.push(((data >> 8) & 0xff) as u8);
+        self.push((data & 0xff) as u8);
+    }
+
+    fn pop(&mut self) -> u8 {
+        self.sp += 1;
+        self.memory.read(self.sp as u16 + 0x100)
+    }
+
+    fn pop16(&mut self) -> u16 {
+        let lo = self.pop();
+        let hi = self.pop();
+
+        ((hi as u16) << 8) | lo as u16
+    }
+
+
+    pub fn step(&mut self, int: Interrupt) -> u8 {
         self.this_cycles = 0;
+
+        match int {
+            Interrupt::IntNMI => self.nmi(),
+            Interrupt::IntIRQ => self.irq(),
+            Interrupt::IntNone => {},
+        }
 
         let (fun, address, addr_mode, size, str_name) = {
             let opcode = self.memory.read(self.pc);
@@ -391,6 +430,37 @@ impl CPU {
         self.this_cycles
     }
 
+    fn nmi(&mut self) {
+        let pc = self.pc;
+
+        self.php(0, AddressingMode::Implicit);
+        self.pc = self.memory.read16(0xFFFA);
+        self.i = 1;
+        self.this_cycles += 7;
+
+        println!("NMI Occured");
+
+        self.push16(pc);
+    }
+
+    fn flags(& self) -> u8 {
+        let mut flags:u8 = 0;;
+        flags |= self.c << 0;
+        flags |= self.z << 1;
+        flags |= self.i << 2;
+        flags |= self.d << 3;
+        flags |= self.b << 4;
+        flags |= self.u << 5;
+        flags |= self.v << 6;
+        flags |= self.n << 7;
+
+        flags
+    }
+
+    fn irq(&mut self) {
+
+    }
+
     fn adc(&mut self, address: u16, mode: AddressingMode) {
         let olda = self.a;
         let mem = self.memory.read(address);
@@ -612,10 +682,8 @@ impl CPU {
     }
     fn jsr(&mut self, address: u16, mode: AddressingMode) {
         let pcval = self.pc + 3 - 1;
-        self.memory.write(((pcval >> 8) & 0xff) as u8, self.sp as u16 + 0x100);
-        self.sp -= 1;
-        self.memory.write((pcval & 0xff) as u8, self.sp as u16 + 0x100);
-        self.sp -= 1;
+
+        self.push16(pcval);
 
         self.pc = address - 3;
     }
@@ -681,17 +749,17 @@ impl CPU {
     }
 
     fn pha(&mut self, address: u16, mode: AddressingMode) {
-        self.memory.write(self.a, self.sp as u16 + 0x100);
-        self.sp -= 1;
+        let a = self.a;
+        self.push(a);
     }
 
     fn php(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let flags = self.flags();
+        self.push(flags);
     }
 
     fn pla(&mut self, address: u16, mode: AddressingMode) {
-        self.sp += 1;
-        self.a = self.memory.read(self.sp as u16 + 0x100);
+        self.a = self.pop();
 
         self.z = if self.a == 0 { 1 } else { 0 };
         self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
@@ -743,12 +811,7 @@ impl CPU {
         panic!("Not implemented!");
     }
     fn rts(&mut self, address: u16, mode: AddressingMode) {
-        self.sp += 1;
-        let one = self.memory.read(self.sp as u16 + 0x100);
-        self.sp += 1;
-        let two = self.memory.read(self.sp as u16 + 0x100);
-
-        self.pc = ((two as u16) << 8) + (one as u16) + 1 - 1;
+        self.pc = self.pop16();
     }
 
     fn sax(&mut self, address: u16, mode: AddressingMode) {
