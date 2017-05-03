@@ -32,7 +32,7 @@ impl CPUMemoryMap {
 
             0x2000 ... 0x3fff => {
                 let modaddr = address % 8;
-                println!("Read from PPU register: {}", modaddr);
+                //println!("Read from PPU register: {}", modaddr);
                 match modaddr {
                     0 => self.ppu.read_control_1(),
                     1 => self.ppu.read_control_2(),
@@ -46,9 +46,27 @@ impl CPUMemoryMap {
                 }
             },
 
-            0x4000 ... 0x4017 => {
-                panic!("0x4000 ... 0x4017");
-            },
+            0x4000 => { panic!("Read from 0x4000") },
+            0x4001 => { panic!("Read from 0x4001") },
+            0x4002 => { panic!("Read from 0x4002") },
+            0x4003 => { panic!("Read from 0x4003") },
+            0x4004 => { panic!("Read from 0x4004") },
+            0x4005 => { panic!("Read from 0x4005") },
+            0x4006 => { panic!("Read from 0x4006") },
+            0x4007 => { panic!("Read from 0x4007") },
+            0x4008 => { panic!("Read from 0x4008") },
+            0x4009 => { panic!("Read from 0x4009") },
+            0x4010 => { panic!("Read from 0x4010") },
+            0x4011 => { panic!("Read from 0x4011") },
+            0x4012 => { panic!("Read from 0x4012") },
+            0x4013 => { panic!("Read from 0x4013") },
+            0x4014 => { panic!("Read from 0x4014") },
+            0x4015 => { panic!("Read from 0x4015") },
+
+            // Controller ports
+            0x4016 => { 0 },
+            0x4017 => { 0 },
+
 
             0x4018 ... 0x401F => {
                 panic!("0x4018 ... 0x401F");
@@ -92,7 +110,7 @@ impl CPUMemoryMap {
 
             0x2000 ... 0x3fff => {
                 let modaddr = address % 8;
-                println!("Write to PPU register: {}", modaddr);
+                //println!("Write to PPU register: {}", modaddr);
                 match modaddr {
                     0 => self.ppu.write_control_1(data),
                     1 => self.ppu.write_control_2(data),
@@ -106,9 +124,29 @@ impl CPUMemoryMap {
                 }
             },
 
-            0x4000 ... 0x4017 => {
-                panic!("0x4000 ... 0x4017");
+            0x4000 => {},
+            0x4001 => {},
+            0x4002 => {},
+            0x4003 => {},
+            0x4004 => {},
+            0x4005 => {},
+            0x4006 => {},
+            0x4007 => {},
+            0x4008 => {},
+            0x4009 => {},
+            0x4010 => {},
+            0x4011 => {},
+            0x4012 => {},
+            0x4013 => {},
+            0x4014 => {
+                let addr:u16 = ((data as u16) << 8);
+                for i in 0..256 {
+                    self.ppu.oam[i] = self.read(addr + (i as u16));
+                }
             },
+            0x4015 => {},
+            0x4016 => {},
+            0x4017 => {},
 
             0x4018 ... 0x401F => {
                 panic!("0x4018 ... 0x401F");
@@ -170,7 +208,10 @@ impl PPUMemoryMap {
             0x3F00 ... 0x3FFF => {
                 self.palettes[address as usize % 0x20] = data;
             }
-            _ => panic!("Read from outside of PPU memory")
+            _ => {
+                println!("{:x}", address);
+                panic!("Read from outside of PPU memory");
+            }
         }
     }
 }

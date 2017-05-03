@@ -25,7 +25,7 @@ fn main() {
     let memory_map = CPUMemoryMap::new(cartridge, ppu);
     let mut cpu = CPU::new(memory_map);
 
-    for _ in 0..20000 {
+    for _ in 0..40000 {
         let int = if (cpu.memory.ppu.nmi == true) { cpu.memory.ppu.nmi = false; Interrupt::IntNMI } else { Interrupt::IntNone };
         let cycles = cpu.step(int);
         cpu.memory.ppu.step(cycles*3);

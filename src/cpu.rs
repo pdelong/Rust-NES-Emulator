@@ -97,6 +97,28 @@ impl CPU {
         ((hi as u16) << 8) | lo as u16
     }
 
+    fn flags_str(&self) -> String {
+        // NBICZ
+        let mut status = "".to_string();
+        if (self.n == 1) {
+            status += "n";
+        }
+        if (self.b == 1) {
+            status += "b";
+        }
+        if (self.i == 1) {
+            status += "i";
+        }
+        if (self.c == 1) {
+            status += "c";
+        }
+        if (self.z == 1) {
+            status += "z";
+        }
+
+        status
+    }
+
 
     pub fn step(&mut self, int: Interrupt) -> u8 {
         self.this_cycles = 0;
@@ -423,7 +445,7 @@ impl CPU {
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
         };
 
-        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.sp);
+        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tP: {}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.flags_str(), self.sp);
         fun(self, address, addr_mode);
         self.pc += size as u16;
 
@@ -433,17 +455,16 @@ impl CPU {
     fn nmi(&mut self) {
         let pc = self.pc;
 
+        self.push16(pc);
         self.php(0, AddressingMode::Implicit);
         self.pc = self.memory.read16(0xFFFA);
         self.i = 1;
         self.this_cycles += 7;
 
         println!("NMI Occured");
-
-        self.push16(pc);
     }
 
-    fn flags(& self) -> u8 {
+    fn flags(&self) -> u8 {
         let mut flags:u8 = 0;;
         flags |= self.c << 0;
         flags |= self.z << 1;
@@ -457,20 +478,32 @@ impl CPU {
         flags
     }
 
+    fn set_flags(&mut self, flags:u8) {
+        self.c = (flags & 1 << 0) >> 0;
+        self.z = (flags & 1 << 1) >> 1;
+        self.i = (flags & 1 << 2) >> 2;
+        self.d = (flags & 1 << 3) >> 3;
+        self.b = (flags & 1 << 4) >> 4;
+        self.u = (flags & 1 << 5) >> 5;
+        self.v = (flags & 1 << 6) >> 6;
+        self.n = (flags & 1 << 7) >> 7;
+    }
+
     fn irq(&mut self) {
 
     }
 
     fn adc(&mut self, address: u16, mode: AddressingMode) {
-        let olda = self.a;
         let mem = self.memory.read(address);
-        self.a = mem + self.a + self.c;
-        let res16:u16 = mem as u16 + olda as u16 + self.c as u16;
+        let (res1, overflow1) = mem.overflowing_add(self.a);
+        let (res2, overflow2) = res1.overflowing_add(self.c);
 
-        self.z = if self.a == 0 { 1 } else { 0 };
-        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
-        self.c = if res16 > 0xFF { 1 } else { 0 };
-        self.v = if (olda ^ self.a) & 0b10000000 != 0 && (mem ^ olda) & 0b10000000 == 0 { 1 } else { 0 };
+        self.z = if res2 == 0 { 1 } else { 0 };
+        self.n = if res2 & 0b10000000 != 0 { 1 } else { 0 };
+        self.c = if overflow1 || overflow2 { 1 } else { 0 };
+        self.v = if (self.a ^ res2) & 0b10000000 != 0 && (mem ^ self.a) & 0b10000000 == 0 { 1 } else { 0 };
+
+        self.a = res2;
     }
 
     fn ahx(&mut self, address: u16, mode: AddressingMode){}
@@ -488,23 +521,25 @@ impl CPU {
     fn asl(&mut self, address: u16, mode: AddressingMode) {
         match mode {
             AddressingMode::Accumulator => {
-                let res16:u16 = self.a as u16 * 2;
-                self.a = ((self.a as i8) * 2) as u8;
+                let res = self.a << 1;
+                let overflow = self.a & 0b10000000 != 0;
+
+                self.a = res;
 
                 self.z = if self.a == 0 { 1 } else { 0 };
                 self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
-                self.c = if res16 > 0xFF { 1 } else { 0 };
+                self.c = if overflow { 1 } else { 0 };
             }
             _ => {
                 let mem = self.memory.read(address);
-                let res16:u16 = mem as u16 * 2;
-                let res:u8 = ((self.a as i8) * 2) as u8;
+                let res = mem << 1;
+                let overflow = mem & 0b10000000 != 0;
 
                 self.z = if res == 0 { 1 } else { 0 };
                 self.n = if res & 0b10000000 != 0 { 1 } else { 0 };
-                self.c = if res16 > 0xFF { 1 } else { 0 };
+                self.c = if overflow { 1 } else { 0 };
 
-                self.memory.write(res, address);
+                self.memory.write(res as u8, address);
             }
         }
     }
@@ -722,22 +757,26 @@ impl CPU {
     fn lsr(&mut self, address: u16, mode: AddressingMode) {
         match mode {
             AddressingMode::Accumulator => {
-                let (newval, overflow) = self.a.overflowing_shr(1);
-                self.a = newval;
+                let res = self.a >> 1;
+                let overflow = self.a & 1 != 0;
+
+                self.a = res;
+
                 self.c = if overflow { 1 } else { 0 };
                 self.z = if self.a == 0 { 1 } else { 0 };
                 self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
             }
 
             _ => {
-                let (newval, overflow) = {
-                    self.memory.read(address).overflowing_shr(1)
-                };
+                let mem = self.memory.read(address);
+                let res = mem >> 1;
+                let overflow = mem & 1 != 0;
 
-                self.memory.write(newval, address);
                 self.c = if overflow { 1 } else { 0 };
-                self.z = if self.a == 0 { 1 } else { 0 };
-                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+                self.z = if mem == 0 { 1 } else { 0 };
+                self.n = if mem & 0b10000000 != 0 { 1 } else { 0 };
+
+                self.memory.write(res, address);
             }
         }
     }
@@ -745,7 +784,9 @@ impl CPU {
     fn nop(&mut self, address: u16, mode: AddressingMode) {}
 
     fn ora(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        self.a = self.a | self.memory.read(address);
+        self.z = if self.a == 0 { 1 } else { 0 };
+        self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
     }
 
     fn pha(&mut self, address: u16, mode: AddressingMode) {
@@ -775,7 +816,28 @@ impl CPU {
     }
 
     fn rol(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        match mode {
+            AddressingMode::Accumulator => {
+                let (mut newval, overflow) = self.a.overflowing_shl(1);
+                newval |= self.c;
+                self.a = newval;
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+
+            _ => {
+                let (mut newval, overflow) = {
+                    self.memory.read(address).overflowing_shl(1)
+                };
+
+                newval |= self.c;
+                self.memory.write(newval, address);
+                self.c = if overflow { 1 } else { 0 };
+                self.z = if self.a == 0 { 1 } else { 0 };
+                self.n = if self.a & 0b10000000 != 0 { 1 } else { 0 };
+            }
+        }
     }
 
     fn ror(&mut self, address: u16, mode: AddressingMode) {
@@ -808,8 +870,15 @@ impl CPU {
     }
 
     fn rti(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let flags = self.pop();
+        let pc = self.pop16();
+        println!("{:x}, {:x}", flags, pc);
+
+        self.set_flags(flags);
+        //Fixme SUCH A HACK OMG PLS
+        self.pc = pc-1;
     }
+
     fn rts(&mut self, address: u16, mode: AddressingMode) {
         self.pc = self.pop16();
     }

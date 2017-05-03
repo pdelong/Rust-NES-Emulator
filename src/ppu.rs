@@ -13,7 +13,7 @@ pub struct PPU {
 
     memory: ::memory::PPUMemoryMap,
 
-    oam: [u8; 256],
+    pub oam: [u8; 256],
 
     // $2000 - PPU Control Register 1
     flag_table_address: u8,
@@ -42,7 +42,7 @@ pub struct PPU {
     pub nmi: bool,
 
     // $2003 - OAMADDR
-    oamaddr: u8,
+    pub oamaddr: u8,
 
     // $2004
     // TODO: Figure this out
@@ -119,7 +119,9 @@ impl PPU {
         if self.scanline == 241 && self.cycle == 1 {
             // Trigger NMI
             self.flag_vblank = true;
-            self.nmi = true;
+            if (self.flag_vblank_enable) {
+                self.nmi = true;
+            }
         }
 
         if self.scanline == 261 && self.cycle == 1 {
