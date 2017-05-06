@@ -445,7 +445,7 @@ impl CPU {
             (fun, address, instruction.addr_mode, instruction.size, instruction.str_name)
         };
 
-        println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tP: {}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.flags_str(), self.sp);
+        //println!("{:x}\t{:x}\t{}\tA: {:x}\tX: {:x}\tY: {:x}\tP: {}\tSP: {:x}", self.pc, address, str_name, self.a, self.x, self.y, self.flags_str(), self.sp);
         fun(self, address, addr_mode);
         self.pc += size as u16;
 

@@ -4,3 +4,9 @@ version = "0.0.0"
 authors = ["Peter DeLong <pdelong@princeton.edu>"]
 
 [dependencies]
+rand="*"
+
+[dependencies.sdl2]
+version = "*"
+default-features = false
+features = ["gfx"]

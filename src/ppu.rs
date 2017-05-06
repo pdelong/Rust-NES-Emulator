@@ -1,5 +1,9 @@
+extern crate rand;
+
 use std::rc::Rc;
 use std::cell::RefCell;
+
+use self::rand::Rng;
 
 pub struct PPU {
     // The cycle number of the current scanline
@@ -8,12 +12,16 @@ pub struct PPU {
     // The current scanline number
     scanline: usize,
 
-    // Current address
-    addr: u16,
+    // Current VRAM address
+    vram_addr: u16,
 
     memory: ::memory::PPUMemoryMap,
 
     pub oam: [u8; 256],
+
+    pub pixeldata: [u8; 256*240*3],
+
+    nametablebyte: u8,
 
     // $2000 - PPU Control Register 1
     flag_table_address: u8,
@@ -66,10 +74,12 @@ impl PPU {
             scanline: 0,
 
             oam: [0; 256],
+            pixeldata: [0; 256*240*3],
 
             memory: ::memory::PPUMemoryMap::new(cart),
 
-            addr: 0,
+            vram_addr: 0,
+            nametablebyte: 0,
 
             // $2000 - PPU Control Register 1
             flag_table_address: 0,
@@ -116,6 +126,8 @@ impl PPU {
 
     // Run one cycle
     pub fn cycle(&mut self) {
+        let mut rng = rand::thread_rng();
+
         if self.scanline == 241 && self.cycle == 1 {
             // Trigger NMI
             self.flag_vblank = true;
@@ -137,14 +149,56 @@ impl PPU {
             }
         }
 
+        let enable_rendering = true;
+
+        let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
+        let visible_line = self.scanline < 240;
+
+        let pre_line = self.scanline == 261;
+
+        let prefetch_cycle = self.cycle >= 321 && self.cycle <= 336;
+        let fetch_cycle = prefetch_cycle || visible_cycle;
+
+        if enable_rendering {
+            if visible_cycle && visible_line {
+                let offset:usize = self.scanline*256 + self.cycle - 1;
+                println!("scanline: {}, cycle: {}, offset: {}",self.scanline, self.cycle, offset);
+                self.pixeldata[offset*3 + 0] = rng.gen();
+                self.pixeldata[offset*3 + 1] = rng.gen();
+                self.pixeldata[offset*3 + 2] = rng.gen();
+            }
+
+            // Render a pixel
+
+            if fetch_cycle {
+                match self.cycle % 8 {
+                    0 => {
+                        // Store tile data
+                    }
+
+                    1 => {
+                        self.nametablebyte = self.memory.read(0x2000 | (self.vram_addr & 0xFFF));
+                    }
+
+                    3 => {
+                        // Fetch Attribute Table Byte
+                    }
+
+                    5 => {
+                        // Fetch Low Byte
+                    }
+
+                    7 => {
+                        // Fetch High Tile Byte
+                    }
+                    _ => {}
+                }
+            }
+
+            // TODO: Do sprites and stuff
+        }
+
         self.cycle += 1;
-
-        // Render a pixel
-
-        // Fetch data from memory if necessary
-
-        // TODO: Do sprites and stuff
-
     }
 
     pub fn read_control_1(&self) -> u8 {
@@ -227,14 +281,13 @@ impl PPU {
         } else {
             self.memory_address_select = true;
             self.memory_address_lo = data;
-            self.addr = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
-            println!("{}", self.addr);
+            self.vram_addr = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
         }
     }
 
     pub fn write_ppudata(&mut self, data: u8) {
-        self.memory.write(data, self.addr);
-        self.addr += if self.flag_vertical_write { 32 } else { 1 };
+        self.memory.write(data, self.vram_addr);
+        self.vram_addr += if self.flag_vertical_write { 32 } else { 1 };
     }
 }
 
