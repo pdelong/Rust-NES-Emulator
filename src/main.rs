@@ -60,7 +60,7 @@ fn main() {
     let memory_map = CPUMemoryMap::new(cartridge, ppu);
     let mut cpu = CPU::new(memory_map);
 
-    for _ in 0..100000 {
+    for _ in 0..300000 {
         if cpu.memory.ppu.nmi {
             texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
                 for y in 0..240 {

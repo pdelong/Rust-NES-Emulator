@@ -461,7 +461,7 @@ impl CPU {
         self.i = 1;
         self.this_cycles += 7;
 
-        println!("NMI Occured");
+        //println!("NMI Occured");
     }
 
     fn flags(&self) -> u8 {
@@ -872,7 +872,6 @@ impl CPU {
     fn rti(&mut self, address: u16, mode: AddressingMode) {
         let flags = self.pop();
         let pc = self.pop16();
-        println!("{:x}, {:x}", flags, pc);
 
         self.set_flags(flags);
         //Fixme SUCH A HACK OMG PLS

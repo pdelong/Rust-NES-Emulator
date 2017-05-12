@@ -14,6 +14,12 @@ pub struct PPU {
 
     // Current VRAM address
     vram_addr: u16,
+    temp_addr: u16,
+    x: u8,
+
+    oddframe: bool,
+
+    write_toggle: bool,
 
     memory: ::memory::PPUMemoryMap,
 
@@ -22,6 +28,13 @@ pub struct PPU {
     pub pixeldata: [u8; 256*240*3],
 
     nametablebyte: u8,
+
+    lowtilebyte: u8,
+    hightilebyte: u8,
+
+    attributebyte: u8,
+
+    tiledata: u64,
 
     // $2000 - PPU Control Register 1
     flag_table_address: u8,
@@ -70,16 +83,28 @@ pub struct PPU {
 impl PPU {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPU {
         PPU {
-            cycle: 0,
-            scanline: 0,
+            cycle: 340,
+            scanline: 240,
 
             oam: [0; 256],
             pixeldata: [0; 256*240*3],
 
             memory: ::memory::PPUMemoryMap::new(cart),
 
+            lowtilebyte: 0,
+            hightilebyte: 0,
+
+            attributebyte: 0,
+
             vram_addr: 0,
+            temp_addr: 0,
+            x: 0,
+            oddframe:false,
+
+            write_toggle: false,
             nametablebyte: 0,
+
+            tiledata: 0,
 
             // $2000 - PPU Control Register 1
             flag_table_address: 0,
@@ -118,15 +143,85 @@ impl PPU {
         }
     }
 
+    fn get_background_pixel(& self) -> u8 {
+        	let data = ((self.tiledata >> 32) as u32) >> ((7 - self.x) * 4);
+            (data & 0x0F) as u8
+    }
+
     pub fn step(&mut self, cycles: u8) {
         for i in 0..cycles {
             self.cycle();
         }
     }
 
+    fn increment_x(&mut self) {
+        if (self.vram_addr & 0x001F) == 31 {
+            // reset addr to 0
+            self.vram_addr &= 0xFFE0;
+            self.vram_addr ^= 0x4000;
+        } else {
+            self.vram_addr += 1;
+        }
+    }
+
+    fn increment_y(&mut self) {
+        if self.vram_addr & 0x7000 != 0x7000 {
+            self.vram_addr += 0x1000;
+        } else {
+            // fine Y = 0
+            self.vram_addr &= 0x8FFF;
+            // let y = coarse Y
+            let mut y = (self.vram_addr & 0x03E0) >> 5;
+            if y == 29 {
+                // coarse Y = 0
+                y = 0;
+                // switch vertical nametable
+                self.vram_addr ^= 0x0800;
+            } else if y == 31 {
+                // coarse Y = 0, nametable not switched
+                y = 0;
+            } else {
+                // increment coarse Y
+                y += 1;
+            }
+            // put coarse Y back into v
+            self.vram_addr = (self.vram_addr & 0xFC1F) | (y << 5)
+        }
+    }
+
+    fn copy_x(&mut self) {
+        self.vram_addr = (self.vram_addr & 0xFBE0) | (self.temp_addr & 0x041F);
+    }
+
+    fn copy_y(&mut self) {
+        self.vram_addr = (self.vram_addr & 0x841F) | (self.temp_addr & 0x7BE0);
+    }
+
+    fn tick(&mut self) {
+        if self.flag_sprites_enable || self.flag_sprites_enable {
+            if self.oddframe == true && self.scanline == 261 && self.cycle == 339 {
+                self.cycle = 0;
+                self.scanline = 0;
+                self.oddframe = false;
+                return;
+            }
+        }
+
+        self.cycle += 1;
+
+        if self.cycle > 340 {
+            self.cycle = 0;
+            self.scanline += 1;
+            if self.scanline > 261 {
+                self.scanline = 0;
+                self.oddframe = if self.oddframe { false } else { true };
+            }
+        }
+    }
+
     // Run one cycle
     pub fn cycle(&mut self) {
-        let mut rng = rand::thread_rng();
+        self.tick();
 
         if self.scanline == 241 && self.cycle == 1 {
             // Trigger NMI
@@ -140,65 +235,98 @@ impl PPU {
             self.flag_vblank = false;
         }
 
-        // We're done with one scanline and maybe a frame
-        if self.cycle > 340 {
-            self.cycle = 0;
-            self.scanline += 1;
-            if self.scanline > 261 {
-                self.scanline = 0;
-            }
-        }
+        let enable_rendering = self.flag_screen_enable || self.flag_sprites_enable;
 
-        let enable_rendering = true;
+        let visible_line = self.scanline < 240;
+        let pre_line = self.scanline == 261;
+        let render_line = pre_line || visible_line;
 
         let visible_cycle = self.cycle >= 1 && self.cycle <= 256;
-        let visible_line = self.scanline < 240;
-
-        let pre_line = self.scanline == 261;
-
         let prefetch_cycle = self.cycle >= 321 && self.cycle <= 336;
         let fetch_cycle = prefetch_cycle || visible_cycle;
 
         if enable_rendering {
+
             if visible_cycle && visible_line {
                 let offset:usize = self.scanline*256 + self.cycle - 1;
-                println!("scanline: {}, cycle: {}, offset: {}",self.scanline, self.cycle, offset);
-                self.pixeldata[offset*3 + 0] = rng.gen();
-                self.pixeldata[offset*3 + 1] = rng.gen();
-                self.pixeldata[offset*3 + 2] = rng.gen();
+                //println!("scanline: {}, cycle: {}, offset: {}",self.scanline, self.cycle, offset);
+                let mut index = self.get_background_pixel();
+                println!("{}", self.vram_addr);
+
+                self.pixeldata[offset*3 + 0] = PALETTE[(index*3) as usize + 0];
+                self.pixeldata[offset*3 + 1] = PALETTE[(index*3) as usize + 1];
+                self.pixeldata[offset*3 + 2] = PALETTE[(index*3) as usize + 2];
             }
 
-            // Render a pixel
-
-            if fetch_cycle {
+            if render_line && fetch_cycle {
+                self.tiledata <<= 4;
                 match self.cycle % 8 {
                     0 => {
                         // Store tile data
+                        let mut data: u32 = 0;
+                        for i in 0..8 {
+                            let a = self.attributebyte;
+                            let p1 = (self.lowtilebyte & 0x80) >> 7;
+                            let p2 = (self.hightilebyte & 0x80) >> 6;
+                            self.lowtilebyte <<= 1;
+                            self.hightilebyte <<= 1;
+                            data <<= 4;
+                            data |= ((a | p1 | p2) as u32);
+                        }
+                        self.tiledata = self.tiledata | (data as u64);
                     }
 
                     1 => {
+                        // Fetch Name Table Byte
                         self.nametablebyte = self.memory.read(0x2000 | (self.vram_addr & 0xFFF));
                     }
 
                     3 => {
                         // Fetch Attribute Table Byte
+                        let address = 0x23C0 | (self.vram_addr & 0x0C00) | ((self.vram_addr >> 4) & 0x38) | ((self.vram_addr >> 2) & 0x07);
+                        let shift = ((self.vram_addr >> 4) & 4) | (self.vram_addr & 2);
+                        self.attributebyte = ((self.memory.read(address) >> shift) & 3) << 2;
                     }
 
                     5 => {
-                        // Fetch Low Byte
+                        // Fetch Low Tile Byte
+                        let fine_y = (self.vram_addr >> 12) & 7;
+                        let baseaddr = if self.flag_screen_table_address { 0x1000 } else { 0x0 };
+                        let tile = self.nametablebyte as u16;
+                        let address = baseaddr as u16 + tile*16 + fine_y;
+                        self.lowtilebyte = self.memory.read(address);
                     }
 
                     7 => {
                         // Fetch High Tile Byte
+                        let fine_y = (self.vram_addr >> 12) & 7;
+                        let baseaddr = if self.flag_screen_table_address { 0x1000 } else { 0x0 };
+                        let tile = self.nametablebyte as u16;
+                        let address = baseaddr as u16 + tile*16 + fine_y;
+                        self.hightilebyte = self.memory.read(address + 8);
                     }
                     _ => {}
                 }
             }
 
+            if pre_line && self.cycle >= 280 && self.cycle <= 304 {
+                self.copy_y();
+            }
+
+            if render_line {
+                if fetch_cycle && self.cycle % 8 == 0 {
+                    self.increment_x();
+                }
+                if self.cycle == 256 {
+                    self.increment_y();
+                }
+                if self.cycle == 257 {
+                    self.copy_x();
+                }
+            }
+
             // TODO: Do sprites and stuff
         }
-
-        self.cycle += 1;
     }
 
     pub fn read_control_1(&self) -> u8 {
@@ -268,20 +396,25 @@ impl PPU {
     }
 
     pub fn write_scroll_offset(&mut self, data: u8) {
-        // FIXME: Need to write twice
-        self.scroll_offset = data;
+        if !self.write_toggle {
+            self.temp_addr = (self.temp_addr & 0xFFE0) | ((data as u16) >> 3);
+            self.x = data & 0x07;
+            self.write_toggle = true;
+        } else {
+            self.temp_addr = (self.temp_addr & 0x8FFF) | (((data as u16) & 0x07) << 12);
+            self.temp_addr = (self.temp_addr & 0xFC1F) | (((data as u16) & 0xF8) << 2);
+            self.write_toggle = false;
+        }
     }
 
     pub fn write_addr_offset(&mut self, data: u8) {
-        // FIXME: Mirroring
-        // FIXME: Also updating the correct internal registers
-        if self.memory_address_select {
-            self.memory_address_select = false;
-            self.memory_address_hi = data;
+        if !self.write_toggle {
+            self.temp_addr = (self.temp_addr & 0x80FF) | (((data as u16) & 0x3F) << 8);
+            self.write_toggle = true;
         } else {
-            self.memory_address_select = true;
-            self.memory_address_lo = data;
-            self.vram_addr = ((self.memory_address_hi as u16) << 8) + (self.memory_address_lo as u16);
+            self.temp_addr = (self.temp_addr & 0xFF00) | (data as u16);
+            self.vram_addr = self.temp_addr;
+            self.write_toggle = false;
         }
     }
 
@@ -291,7 +424,7 @@ impl PPU {
     }
 }
 
- const PALETTE: [u8; 192] = [
+const PALETTE: [u8; 192] = [
     124,124,124,    0,0,252,        0,0,188,        68,40,188,
     148,0,132,      168,0,32,       168,16,0,       136,20,0,
     80,48,0,        0,120,0,        0,104,0,        0,88,0,
