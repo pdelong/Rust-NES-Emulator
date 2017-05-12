@@ -83,8 +83,8 @@ pub struct PPU {
 impl PPU {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPU {
         PPU {
-            cycle: 340,
-            scanline: 240,
+            cycle: 0,
+            scanline: 0,
 
             oam: [0; 256],
             pixeldata: [0; 256*240*3],
