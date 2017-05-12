@@ -80,14 +80,14 @@ impl CPUMemoryMap {
             // First 16k of ROM
             0x8000 ... 0xBFFF => {
                 let cart = self.cart.borrow();
-                cart.rom[address as usize - 0x8000]
+                cart.prgrom[address as usize - 0x8000]
             }
 
             // Last 16k of ROM (just a mirror for NROM-128)
             0xC000 ... 0xFFFF => {
                 // REMEMBER THIS IS A MIRROR OF THE PREVIOUS BECAUSE NROM 128
                 let cart = self.cart.borrow();
-                cart.rom[address as usize - 0xC000]
+                cart.prgrom[address as usize - 0xC000]
             }
             _ => 0
         }
@@ -187,7 +187,7 @@ impl PPUMemoryMap {
         match address {
             0 ... 0x1FFF => {
                 let cart = self.cart.borrow();
-                cart.rom[address as usize]
+                cart.chrrom[address as usize]
             },
 
             0x2000 ... 0x3EFF => {

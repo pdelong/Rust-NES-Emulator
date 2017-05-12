@@ -36,7 +36,7 @@ fn main() {
     let mut renderer = window.renderer().build().unwrap();
 
     let mut texture = renderer.create_texture_streaming(
-        PixelFormatEnum::BGR24, 256, 240).unwrap();
+        PixelFormatEnum::RGB24, 256, 240).unwrap();
 
     texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
         for y in 0..240 {
