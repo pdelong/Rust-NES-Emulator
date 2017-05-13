@@ -252,9 +252,12 @@ impl PPU {
                 //println!("scanline: {}, cycle: {}, offset: {}",self.scanline, self.cycle, offset);
                 let mut index = self.get_background_pixel();
 
-                self.pixeldata[offset*3 + 0] = PALETTE[(index*3) as usize + 0];
-                self.pixeldata[offset*3 + 1] = PALETTE[(index*3) as usize + 1];
-                self.pixeldata[offset*3 + 2] = PALETTE[(index*3) as usize + 2];
+                let palette_index = 0x3F00 + index as u16;
+                let last_index = self.memory.read(palette_index);
+
+                self.pixeldata[offset*3 + 0] = PALETTE[(last_index*3) as usize + 0];
+                self.pixeldata[offset*3 + 1] = PALETTE[(last_index*3) as usize + 1];
+                self.pixeldata[offset*3 + 2] = PALETTE[(last_index*3) as usize + 2];
             }
 
             if render_line && fetch_cycle {
@@ -284,6 +287,7 @@ impl PPU {
                         // Fetch Attribute Table Byte
                         let address = 0x23C0 | (self.vram_addr & 0x0C00) | ((self.vram_addr >> 4) & 0x38) | ((self.vram_addr >> 2) & 0x07);
                         let shift = ((self.vram_addr >> 4) & 4) | (self.vram_addr & 2);
+                        println!("{}", address);
                         self.attributebyte = ((self.memory.read(address) >> shift) & 3) << 2;
 
                     }

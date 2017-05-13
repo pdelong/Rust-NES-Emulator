@@ -180,14 +180,14 @@ impl CPUMemoryMap {
 
 impl PPUMemoryMap {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>) -> PPUMemoryMap {
-        PPUMemoryMap{vram: Box::new([0; 0x800]) , cart: cart, palettes: Box::new([0; 0x800])}
+        PPUMemoryMap{vram: Box::new([0xFF; 0x800]) , cart: cart, palettes: Box::new([0; 0x800])}
     }
 
     pub fn read(&self, address: u16) -> u8 {
         match address {
             0 ... 0x1FFF => {
                 let cart = self.cart.borrow();
-                cart.chrrom[address as usize]
+                cart.chrrom[(address) as usize]
             },
 
             0x2000 ... 0x3EFF => {
