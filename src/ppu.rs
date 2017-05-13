@@ -7,10 +7,10 @@ use self::rand::Rng;
 
 pub struct PPU {
     // The cycle number of the current scanline
-    cycle: usize,
+    cycle: u16,
 
     // The current scanline number
-    scanline: usize,
+    scanline: u16,
 
     // Current VRAM address
     vram_addr: u16,
@@ -36,6 +36,13 @@ pub struct PPU {
 
     tiledata: u64,
 
+    // Internal variables for sprites
+    sprite_count: u8,
+    sprite_patterns: [u32; 8],
+    sprite_positions: [u8; 8],
+    sprite_priorities: [u8; 8],
+    sprite_indexes: [u8; 8],
+
     // $2000 - PPU Control Register 1
     flag_table_address: u8,
     flag_vertical_write: bool,
@@ -57,8 +64,8 @@ pub struct PPU {
 
     // $2002 - PPU Status Register
     /* 5 UNKNOWN BITS HERE */
-    flag_overflow: bool,
-    flag_hit: bool,
+    flag_sprite_overflow: bool,
+    flag_sprite_0_hit: bool,
     flag_vblank: bool,
     pub nmi: bool,
 
@@ -106,6 +113,12 @@ impl PPU {
 
             tiledata: 0,
 
+            sprite_count: 0,
+            sprite_patterns: [0; 8],
+            sprite_positions: [0; 8],
+            sprite_priorities: [0; 8],
+            sprite_indexes: [0; 8],
+
             // $2000 - PPU Control Register 1
             flag_table_address: 0,
             flag_vertical_write: false,
@@ -125,8 +138,8 @@ impl PPU {
             flag_emphasize_blue: false,
 
             // $2002 - PPU Status Register
-            flag_overflow: false,
-            flag_hit: false,
+            flag_sprite_overflow: false,
+            flag_sprite_0_hit: false,
             flag_vblank: false,
             nmi: false,
 
@@ -158,7 +171,7 @@ impl PPU {
         if (self.vram_addr & 0x001F) == 31 {
             // reset addr to 0
             self.vram_addr &= 0xFFE0;
-            self.vram_addr ^= 0x4000;
+            //self.vram_addr ^= 0x4000;
         } else {
             self.vram_addr += 1;
         }
@@ -219,12 +232,132 @@ impl PPU {
         }
     }
 
+    fn fetch_pattern(&self, i: usize, row: i8) -> u32 {
+        let tile = self.oam[i * 4 + 1];
+        let attr = self.oam[i * 4 + 2];
+
+        let row = if attr & 0x80 == 0x80 { 7 - row } else { row };
+
+        let table = if self.flag_sprite_table_address { 0x1000 } else { 0x0 };
+
+        let address = table + (tile as u16) * 16 + (row as u16);
+
+        let a = (attr & 3) << 2;
+
+        let mut lowtilebyte  = self.memory.read(address);
+        let mut hightilebyte = self.memory.read(address + 8);
+        let mut data: u32 = 0;
+        for i in 0..8 {
+
+            if attr & 0x40 == 0x40 {
+                let p1 = (lowtilebyte & 1) << 0;
+                let  p2 = (hightilebyte & 1) << 1;
+                lowtilebyte >>= 1;
+                hightilebyte >>= 1;
+                data <<= 4;
+                data |= ((a | p1 | p2) as u32);
+            } else {
+                let p1 = (lowtilebyte & 0x80) >> 7;
+                let p2 = (hightilebyte & 0x80) >> 6;
+                lowtilebyte <<= 1;
+                hightilebyte <<= 1;
+                data <<= 4;
+                data |= ((a | p1 | p2) as u32);
+            }
+        }
+
+        data
+    }
+
+    fn evaluate_sprites(&mut self) {
+        let mut count = 0;
+        for i in 0..64 {
+            let ypos = self.oam[i*4 + 0];
+            let attr = self.oam[i*4 + 2];
+            let xpos = self.oam[i*4 + 3];
+
+            let row = (self.scanline as i16) - (ypos as i16);
+            if row < 0 || row >= 8 {
+                continue;
+            }
+
+            let row = row as i8;
+
+            if count < 8 {
+                self.sprite_patterns[count]   = self.fetch_pattern(i, row);
+                self.sprite_positions[count]  = xpos;
+                self.sprite_priorities[count] = (attr >> 5) & 1;
+                self.sprite_indexes[count]    = i as u8;
+            }
+            count += 1;
+        }
+        if count >= 8 {
+            self.flag_sprite_overflow = true;
+            count = 8
+        }
+
+        self.sprite_count = count as u8;
+    }
+
+    fn get_sprite_pixel(&self) -> (u8, u8) {
+        for i in 0..self.sprite_count {
+            let mut offset:i16 = ((self.cycle as i16) - 1) - (self.sprite_positions[i as usize] as i16);
+            if offset < 0 || offset > 7 {
+                continue;
+            }
+
+            offset = 7 - offset;
+            let color = (self.sprite_patterns[i as usize] >> ((offset as u8)*4) & 0x0F) as u8;
+            if color % 4 == 0 {
+                continue
+            }
+
+            return ((i as u8), color);
+        }
+        (0, 0)
+    }
+
+    fn render_pixel(&mut self) -> (u8, u8, u8) {
+        let background = self.get_background_pixel();
+        let (i, sprite) = self.get_sprite_pixel();
+
+        let x = self.cycle - 1;
+        let y = self.scanline;
+
+        let b = background % 4 != 0;
+        let s = sprite % 4 != 0;
+
+        let color =
+            if !b && !s {
+                0
+            } else if !b && s {
+                sprite | 0x10
+            } else if b && !s {
+                background
+            } else {
+                if self.sprite_indexes[i as usize] == 0 && x < 255 {
+                    self.flag_sprite_0_hit = true
+                }
+                if self.sprite_priorities[i as usize] == 0 {
+                    sprite | 0x10
+                } else {
+                    background
+                }
+            };
+
+        let palette_index = 0x3F00 + color as u16;
+        let last_index = self.memory.read(palette_index);
+
+        (PALETTE[(last_index*3) as usize + 0], PALETTE[(last_index*3) as usize + 1], PALETTE[(last_index*3) as usize + 2])
+    }
+
     // Run one cycle
     pub fn cycle(&mut self) {
         self.tick();
 
         if self.scanline == 241 && self.cycle == 1 {
             // Trigger NMI
+            self.flag_sprite_overflow = false;
             self.flag_vblank = true;
             if (self.flag_vblank_enable) {
                 self.nmi = true;
@@ -246,18 +379,15 @@ impl PPU {
         let fetch_cycle = prefetch_cycle || visible_cycle;
 
         if enable_rendering {
-
+            //println!("scanline: {}, cycle: {}, vram_addr: {:x}",self.scanline, self.cycle, self.vram_addr);
             if visible_cycle && visible_line {
-                let offset:usize = self.scanline*256 + self.cycle - 1;
-                //println!("scanline: {}, cycle: {}, offset: {}",self.scanline, self.cycle, offset);
-                let mut index = self.get_background_pixel();
+                let offset:usize = (self.scanline as usize)*256 + (self.cycle as usize) - 1;
 
-                let palette_index = 0x3F00 + index as u16;
-                let last_index = self.memory.read(palette_index);
+                let (r,g,b) = self.render_pixel();
 
-                self.pixeldata[offset*3 + 0] = PALETTE[(last_index*3) as usize + 0];
-                self.pixeldata[offset*3 + 1] = PALETTE[(last_index*3) as usize + 1];
-                self.pixeldata[offset*3 + 2] = PALETTE[(last_index*3) as usize + 2];
+                self.pixeldata[offset*3 + 0] = r;
+                self.pixeldata[offset*3 + 1] = g;
+                self.pixeldata[offset*3 + 2] = b;
             }
 
             if render_line && fetch_cycle {
@@ -287,7 +417,6 @@ impl PPU {
                         // Fetch Attribute Table Byte
                         let address = 0x23C0 | (self.vram_addr & 0x0C00) | ((self.vram_addr >> 4) & 0x38) | ((self.vram_addr >> 2) & 0x07);
                         let shift = ((self.vram_addr >> 4) & 4) | (self.vram_addr & 2);
-                        println!("{}", address);
                         self.attributebyte = ((self.memory.read(address) >> shift) & 3) << 2;
 
                     }
@@ -297,7 +426,7 @@ impl PPU {
                         let fine_y = (self.vram_addr >> 12) & 7;
                         let baseaddr = if self.flag_screen_table_address { 0x1000 } else { 0x0 };
                         let tile = self.nametablebyte as u16;
-                        let address = baseaddr as u16 + tile*16 + fine_y;
+                        let address = baseaddr + tile*16 + fine_y;
                         self.lowtilebyte = self.memory.read(address);
                     }
 
@@ -306,7 +435,7 @@ impl PPU {
                         let fine_y = (self.vram_addr >> 12) & 7;
                         let baseaddr = if self.flag_screen_table_address { 0x1000 } else { 0x0 };
                         let tile = self.nametablebyte as u16;
-                        let address = baseaddr as u16 + tile*16 + fine_y;
+                        let address = baseaddr + tile*16 + fine_y;
                         self.hightilebyte = self.memory.read(address + 8);
                     }
                     _ => {}
@@ -320,9 +449,11 @@ impl PPU {
             if render_line {
                 if fetch_cycle && self.cycle % 8 == 0 {
                     self.increment_x();
+                    let fine_y = (self.vram_addr >> 12) & 7;
                 }
                 if self.cycle == 256 {
                     self.increment_y();
+                    let fine_y = (self.vram_addr >> 12) & 7;
                 }
                 if self.cycle == 257 {
                     self.copy_x();
@@ -330,6 +461,16 @@ impl PPU {
             }
 
             // TODO: Do sprites and stuff
+            if enable_rendering {
+                if self.cycle == 257 {
+                    if visible_line {
+                        self.evaluate_sprites();
+                    } else {
+                        self.sprite_count = 0;
+                    }
+                }
+            }
+
         }
     }
 
@@ -342,8 +483,8 @@ impl PPU {
     }
 
     pub fn read_status(&self) -> u8 {
-        (self.flag_overflow as u8) << 5 |
-        (self.flag_hit as u8)      << 6 |
+        (self.flag_sprite_overflow as u8) << 5 |
+        (self.flag_sprite_0_hit as u8)      << 6 |
         (self.flag_vblank as u8)   << 7
     }
 

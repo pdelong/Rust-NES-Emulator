@@ -807,7 +807,8 @@ impl CPU {
     }
 
     fn plp(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let flags = self.pop();
+        self.set_flags(flags);
     }
 
 

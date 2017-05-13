@@ -14,6 +14,8 @@ use sdl2::rect::Rect;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 
+use std::{thread, time};
+
 extern crate nes;
 
 fn main() {
@@ -60,7 +62,10 @@ fn main() {
     let memory_map = CPUMemoryMap::new(cartridge, ppu);
     let mut cpu = CPU::new(memory_map);
 
-    for _ in 0..300000 {
+    let now = time::Instant::now();
+    let target = time::Duration::new(0,1666667);
+
+    for _ in 0..100000000 {
         if cpu.memory.ppu.nmi {
             texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
                 for y in 0..240 {
@@ -76,6 +81,14 @@ fn main() {
             renderer.clear();
             renderer.copy(&texture, None, None).unwrap();
             renderer.present();
+            let prev = now;
+            let now = time::Instant::now();
+            let duration = now - prev;
+            if duration < target {
+                thread::sleep(target - duration);
+            } else {
+                println!("We missed a deadline");
+            }
         }
         let int = if (cpu.memory.ppu.nmi == true) { cpu.memory.ppu.nmi = false; Interrupt::IntNMI } else { Interrupt::IntNone };
         let cycles = cpu.step(int);
