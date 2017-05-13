@@ -571,7 +571,12 @@ impl CPU {
     }
 
     fn bit(&mut self, address: u16, mode: AddressingMode) {
-        panic!("Not implemented!");
+        let mem = self.memory.read(address);
+        let res = mem & self.a;
+
+        self.z = if res == 0 { 1 } else { 0 };
+        self.v = if res & 0b1000000 != 0 { 1 } else { 0 };
+        self.n = if res & 0b10000000 != 0 { 1 } else { 0 };
     }
 
     fn bmi(&mut self, address: u16, mode: AddressingMode) {

@@ -6,6 +6,7 @@ pub struct CPUMemoryMap {
     pub ram: Box<[u8]>,
     // input
     pub cart: Rc<RefCell<::cartridge::Cartridge>>,
+    pub controller1: RefCell<::controller::Controller>,
 }
 
 pub struct PPUMemoryMap {
@@ -17,7 +18,11 @@ pub struct PPUMemoryMap {
 // For now I'm just gonna assume NROM-128 because I'm just focusing on Donkey Kong
 impl CPUMemoryMap {
     pub fn new(cart: Rc<RefCell<::cartridge::Cartridge>>, ppu: ::ppu::PPU) -> CPUMemoryMap {
-        CPUMemoryMap{ram: Box::new([0; 0x800]) , cart: cart, ppu: ppu}
+        CPUMemoryMap{ram: Box::new([0; 0x800]),
+                     cart: cart,
+                     ppu: ppu,
+                     controller1: RefCell::new(::controller::Controller::new()),
+                    }
     }
 
     pub fn read(&self, address: u16) -> u8 {
@@ -64,8 +69,13 @@ impl CPUMemoryMap {
             0x4015 => { panic!("Read from 0x4015") },
 
             // Controller ports
-            0x4016 => { 0 },
-            0x4017 => { 0 },
+            0x4016 => {
+                self.controller1.borrow_mut().read()
+            },
+            0x4017 => {
+                //self.controller2.borrow_mut().read()
+                0
+            },
 
 
             0x4018 ... 0x401F => {
@@ -151,8 +161,14 @@ impl CPUMemoryMap {
                 }
             },
             0x4015 => {},
-            0x4016 => {},
-            0x4017 => {},
+
+            // Controller ports
+            0x4016 => {
+                self.controller1.borrow_mut().write(data)
+            },
+            0x4017 => {
+                //self.controller2.borrow_mut().write(data)
+            },
 
             0x4018 ... 0x401F => {
                 panic!("0x4018 ... 0x401F");

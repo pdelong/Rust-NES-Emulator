@@ -16,6 +16,8 @@ use sdl2::keyboard::Keycode;
 
 use std::{thread, time};
 
+use std::collections::HashSet;
+
 extern crate nes;
 
 fn main() {
@@ -62,10 +64,14 @@ fn main() {
     let memory_map = CPUMemoryMap::new(cartridge, ppu);
     let mut cpu = CPU::new(memory_map);
 
-    let now = time::Instant::now();
-    let target = time::Duration::new(0,1666667);
+    let mut prev = time::Instant::now();
+    let target = time::Duration::new(0,16666667);
 
-    for _ in 0..100000000 {
+    let mut event_pump = sdl_context.event_pump().unwrap();
+
+    let mut keyarr = [false;8];
+
+    loop {
         if cpu.memory.ppu.nmi {
             texture.with_lock(None, |buffer: &mut [u8], pitch: usize| {
                 for y in 0..240 {
@@ -81,15 +87,39 @@ fn main() {
             renderer.clear();
             renderer.copy(&texture, None, None).unwrap();
             renderer.present();
-            let prev = now;
-            let now = time::Instant::now();
-            let duration = now - prev;
+            let duration = prev.elapsed();
             if duration < target {
                 thread::sleep(target - duration);
             } else {
                 println!("We missed a deadline");
             }
+            prev = time::Instant::now();
+
+
+            for event in event_pump.poll_iter() {
+                match event {
+                    Event::Quit {..}
+                    | Event::KeyDown { keycode: Some(Keycode::Escape), .. } => {
+                        std::process::exit(1)
+                    },
+                    _ => {}
+                }
+            }
+
+            let keys:HashSet<Keycode> = event_pump.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
+            keyarr = [
+                keys.contains(&Keycode::Z),      // A
+                keys.contains(&Keycode::X),      // B
+                keys.contains(&Keycode::RShift), // Select
+                keys.contains(&Keycode::Return), // Start
+                keys.contains(&Keycode::Up),     // Up
+                keys.contains(&Keycode::Down),   // Down
+                keys.contains(&Keycode::Left),   // Left
+                keys.contains(&Keycode::Right),  // Right
+            ];
+
         }
+        cpu.memory.controller1.borrow_mut().set_all(keyarr);
         let int = if (cpu.memory.ppu.nmi == true) { cpu.memory.ppu.nmi = false; Interrupt::IntNMI } else { Interrupt::IntNone };
         let cycles = cpu.step(int);
         cpu.memory.ppu.step(cycles*3);
