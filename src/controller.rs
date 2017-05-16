@@ -2,13 +2,14 @@
 
 pub struct Controller {
     buttons: [bool; 8],
-    index: usize,
-    strobe: bool,
+    pub index: usize,
+    pub strobe: bool,
+    strobeenable: bool,
 }
 
 impl Controller {
-    pub fn new() -> Controller {
-        Controller{buttons:[false; 8], index:0, strobe: true}
+    pub fn new(strobeenable: bool) -> Controller {
+        Controller{buttons:[false; 8], index:0, strobe: true, strobeenable: strobeenable}
     }
 
     pub fn read(&mut self) -> u8 {
@@ -25,7 +26,7 @@ impl Controller {
     }
 
     pub fn write(&mut self, data: u8) {
-        self.strobe = data != 0;
+        self.strobe = data != 0 && self.strobeenable;
         if self.strobe {
             self.index = 0;
         }

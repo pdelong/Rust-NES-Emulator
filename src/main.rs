@@ -69,7 +69,8 @@ fn main() {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
 
-    let mut keyarr = [false;8];
+    let mut keyarr1 = [false;8];
+    let mut keyarr2 = [false;8];
 
     loop {
         if cpu.memory.ppu.nmi {
@@ -107,9 +108,9 @@ fn main() {
             }
 
             let keys:HashSet<Keycode> = event_pump.keyboard_state().pressed_scancodes().filter_map(Keycode::from_scancode).collect();
-            keyarr = [
-                keys.contains(&Keycode::Z),      // A
-                keys.contains(&Keycode::X),      // B
+            keyarr1 = [
+                keys.contains(&Keycode::Period),      // A
+                keys.contains(&Keycode::Comma),      // B
                 keys.contains(&Keycode::RShift), // Select
                 keys.contains(&Keycode::Return), // Start
                 keys.contains(&Keycode::Up),     // Up
@@ -118,8 +119,19 @@ fn main() {
                 keys.contains(&Keycode::Right),  // Right
             ];
 
+            keyarr2 = [
+                keys.contains(&Keycode::Q),      // A
+                keys.contains(&Keycode::E),      // B
+                keys.contains(&Keycode::LShift), // Select
+                keys.contains(&Keycode::Z), // Start
+                keys.contains(&Keycode::W),     // Up
+                keys.contains(&Keycode::S),   // Down
+                keys.contains(&Keycode::A),   // Left
+                keys.contains(&Keycode::D),  // Right
+            ];
         }
-        cpu.memory.controller1.borrow_mut().set_all(keyarr);
+        cpu.memory.controller1.borrow_mut().set_all(keyarr1);
+        cpu.memory.controller2.borrow_mut().set_all(keyarr2);
         let int = if (cpu.memory.ppu.nmi == true) { cpu.memory.ppu.nmi = false; Interrupt::IntNMI } else { Interrupt::IntNone };
         let cycles = cpu.step(int);
         cpu.memory.ppu.step(cycles*3);

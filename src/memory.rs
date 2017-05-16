@@ -7,6 +7,7 @@ pub struct CPUMemoryMap {
     // input
     pub cart: Rc<RefCell<::cartridge::Cartridge>>,
     pub controller1: RefCell<::controller::Controller>,
+    pub controller2: RefCell<::controller::Controller>,
 }
 
 pub struct PPUMemoryMap {
@@ -21,7 +22,8 @@ impl CPUMemoryMap {
         CPUMemoryMap{ram: Box::new([0; 0x800]),
                      cart: cart,
                      ppu: ppu,
-                     controller1: RefCell::new(::controller::Controller::new()),
+                     controller1: RefCell::new(::controller::Controller::new(true)),
+                     controller2: RefCell::new(::controller::Controller::new(false)),
                     }
     }
 
@@ -73,8 +75,7 @@ impl CPUMemoryMap {
                 self.controller1.borrow_mut().read()
             },
             0x4017 => {
-                //self.controller2.borrow_mut().read()
-                0
+                self.controller2.borrow_mut().read()
             },
 
 
@@ -164,10 +165,16 @@ impl CPUMemoryMap {
 
             // Controller ports
             0x4016 => {
-                self.controller1.borrow_mut().write(data)
+                self.controller1.borrow_mut().write(data);
+                if self.controller1.borrow().strobe {
+                    self.controller2.borrow_mut().strobe = true;
+                    self.controller2.borrow_mut().index = 0;
+                } else {
+                    self.controller2.borrow_mut().strobe = false;
+                }
             },
             0x4017 => {
-                //self.controller2.borrow_mut().write(data)
+                self.controller2.borrow_mut().write(data)
             },
 
             0x4018 ... 0x401F => {
